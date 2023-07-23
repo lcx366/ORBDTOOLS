@@ -150,8 +150,10 @@ Three types of matching results are summaried as follows
 
 ## Change log
 
+- **0.0.2 — Jul 23, 2023**
+  - Adjusted the default matching threshold to improve the matching success rate.
+
 - **0.0.1 — Jul 18, 2023**
-  
   - The ***orbdtools*** package was released.
 
 ## Reference

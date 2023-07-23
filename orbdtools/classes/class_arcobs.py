@@ -122,8 +122,8 @@ class ArcObs(object):
         if self.mode == 'optical':
             if threshold_dict is None:
                 threshold_pre = 5
-                threshold_deep = 200 # [arcsec]
-                threshold_slope = 0.5 # [arcsec/s]
+                threshold_deep = 1000 # [arcsec]
+                threshold_slope = 200 # [arcsec/s]
             else:
                 threshold_pre = threshold_dict['threshold_pre']
                 threshold_deep = threshold_dict['threshold_deep']
@@ -134,9 +134,9 @@ class ArcObs(object):
         elif self.mode == 'radar':
             r = self._r_lowess
             if threshold_dict is None:
-                threshold_pre = [10,5] # [deg,km]
-                threshold_deep = [500,1] # [arcsec,km]
-                threshold_slope = [1,0.5] # [arcsec/s,km/s]
+                threshold_pre = [10,10] # [deg,km]
+                threshold_deep = [2000,5] # [arcsec,km]
+                threshold_slope = [400,2] # [arcsec/s,km/s]
             else:
                 threshold_pre = threshold_dict['threshold_pre']
                 threshold_deep = threshold_dict['threshold_deep']

@@ -8,7 +8,7 @@ from .parse_tle import load_tle_file
 from ..transform.frame_trans import gcrf_teme_mat
 from ..utils.preprocessing import get_mid_point
 
-def arcsat_match(tle,ta,xyz_site,radec,threshold_pre=5,threshold_deep=200,threshold_slope=0.5):
+def arcsat_match(tle,ta,xyz_site,radec,threshold_pre=5,threshold_deep=1000,threshold_slope=200):
     """
     Match the observation arc based on optical angle measurement data to space objects in TLE file.
 
@@ -101,7 +101,7 @@ def match_pre(sats_list,ta,xyz_site,radec,threshold=5):
     
     return sats_list_filter        
 
-def match_deep(sats_list,ta,xyz_site,radec,threshold=200,threshold_slope=0.5):
+def match_deep(sats_list,ta,xyz_site,radec,threshold=1000,threshold_slope=200):
     """
     Deeply match the observation arc to space objects in filtered objects list.
 
