@@ -11,16 +11,17 @@ class ArcObs(object):
             - mode -> [str] Type of the observation arc. 'optical' or 'radar' are avaliable.
             - t -> [array of str] Time sequence from the observation arc
             - radec -> [2D array] Ra and Dec of space objects from the observation arc, [deg]
-            - xyz_site -> [3D array] Cartesian coordinates of space objects in GCRF from the observation arc, [km]
+            - azalt -> [2D array] Az and alt of space objects from the observation arc, [deg]
             - r -> [array of float] Slant distance of the space object relative to the site, [km]
+            - xyz_site -> [3D array] Cartesian coordinates of space objects in GCRF from the observation arc, [km]
             - _ta_lowess -> [array like] Astropy Time sequence with outliers removed using LOWESS 
             - _radec_lowess -> [2D array] Ra and Dec with outliers removed using LOWESS 
             - _xyz_site_lowess -> [3D array] Cartesian coordinates with outliers removed using LOWESS 
             - _r_lowess -> [array of float] Slant distance with outliers removed using LOWESS 
             - flag_lowess -> [array of bool] Flag of data points. If False, the data point is an outlier.
         Methods:    
-            - lowess_smooth -> 
-            - arc_match
+            - lowess_smooth -> Remove outliers in optical/radar data with the method of LOWESS (Locally Weighted Scatterplot Smoothing)
+            - arc_match -> Match the observation arc based on optical angle measurement data or radar measurement data(range+angle) to space objects in TLE file.
     """
 
     def __init__(self,info):
@@ -30,21 +31,25 @@ class ArcObs(object):
         Usage:
             >>> from orbdtools import ArcObs
             >>> arc_optical = ArcObs({'t':t,'radec':radec,'xyz_site':xyz_site})
-            >>> # arc_radar = ArcObs({'t':t,'radec':radec,'r':r,'xyz_site':xyz_site})
+            >>> # arc_radar = ArcObs({'t':t,'azalt':azalt,'r':r,'xyz_site':xyz_site})
         Inputs:
             info -> [dict] Necessary data for observation arcs in form of dictionary    
         Outputs:
             arc_optical -> An instance of class ArcObs 
         """
-        if 'r' in info.keys():
+        if 'r' in info.keys() and 'azalt' in info.keys():
             info['mode'] = 'radar'
-        else:
+            info['_azalt_lowess'] = info['azalt']
+            info['_r_lowess'] = info['r']
+            info['_orbele_site_lowess'] = info['orbele_site']
+        elif 'radec' in info.keys():
             info['mode'] = 'optical'
+            info['_radec_lowess'] = info['radec']
+        else:
+            raise Exception('Input only supports optical angle measurement data and radar (ranging + angle measurement) data.')    
 
         info['_ta_lowess'] = Time(info['t'])
-        info['_radec_lowess'] = info['radec']
-        info['_xyz_site_lowess'] = info['xyz_site'] 
-        if 'r' in info.keys(): info['_r_lowess'] = info['r']
+        info['_xyz_site_lowess'] = info['xyz_site']
 
         self.info = info
 
@@ -70,12 +75,14 @@ class ArcObs(object):
         info = self.info
         if self.mode == 'optical': 
             flag = lowess_smooth_optical(ta,self.radec,frac)
+            self._radec_lowess = info['_radec_lowess'] = self.radec[flag]
         elif self.mode == 'radar':
-            flag = lowess_smooth_radar(ta,self.radec,self.r,frac)
+            flag = lowess_smooth_radar(ta,self.azalt,self.r,frac)
             self._r_lowess = info['_r_lowess'] = self.r[flag]
+            self._azalt_lowess = info['_azalt_lowess'] = self.azalt[flag]
+            self._orbele_site_lowess = info['_orbele_site_lowess'] = self.orbele_site[flag]
 
         self._ta_lowess = info['_ta_lowess'] = ta[flag]
-        self._radec_lowess = info['_radec_lowess'] = self.radec[flag]
         self._xyz_site_lowess = info['_xyz_site_lowess'] = self.xyz_site[flag]
         self.flag_lowess = info['flag_lowess'] = flag   
 
@@ -115,11 +122,11 @@ class ArcObs(object):
         """
         info = self.info
         ta = self._ta_lowess
-        radec = self._radec_lowess
         xyz_site = self._xyz_site_lowess
 
         # For case of optical angle measurement data
         if self.mode == 'optical':
+            radec = self._radec_lowess
             if threshold_dict is None:
                 threshold_pre = 5
                 threshold_deep = 1000 # [arcsec]
@@ -132,7 +139,10 @@ class ArcObs(object):
         
         # For case of radar measurement data(range+angle)
         elif self.mode == 'radar':
+            azalt = self._azalt_lowess
             r = self._r_lowess
+            orbele_site = self._orbele_site_lowess
+            
             if threshold_dict is None:
                 threshold_pre = [10,10] # [deg,km]
                 threshold_deep = [2000,5] # [arcsec,km]
@@ -141,7 +151,7 @@ class ArcObs(object):
                 threshold_pre = threshold_dict['threshold_pre']
                 threshold_deep = threshold_dict['threshold_deep']
                 threshold_slope = threshold_dict['threshold_slope'] 
-            code_match,satnum,disp_match = arcsat_match_radar(tle,ta,xyz_site,radec,r,threshold_pre,threshold_deep,threshold_slope)
+            code_match,satnum,disp_match = arcsat_match_radar(tle,ta,xyz_site,orbele_site,azalt,r,threshold_pre,threshold_deep,threshold_slope)
 
         self.code_match = info['code_match'] = code_match
         self.satnum = info['satnum'] = satnum

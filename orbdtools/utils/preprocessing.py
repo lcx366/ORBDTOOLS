@@ -62,7 +62,7 @@ def lowess_smooth_optical(ta,radec,frac=0.5):
 
     return flag
 
-def lowess_smooth_radar(ta,radec,r,frac=0.5):
+def lowess_smooth_radar(ta,azalt,r,frac=0.5):
     """
     Remove outliers in radar data with the method of LOWESS (Locally Weighted Scatterplot Smoothing)
     Here, LOWESS uses a weighted **linear regression** in default.
@@ -71,7 +71,7 @@ def lowess_smooth_radar(ta,radec,r,frac=0.5):
         >>> flag = lowess_smooth_radar(ta,radec,r)
     Inputs:
         ta -> [array of Astropy Time] time sequence
-        radec -> [2D array] RA and Dec of space object, [deg]
+        azalt -> [2D array] Az and Alt of space object, [deg]
         r -> [array] Slant distance of the space object relative to the site, [km]
         frac -> [float,optional,default=0.5] The fraction of the data used in local regression. The value of fraction is between 0 and 1.  
     Outputs:
@@ -80,7 +80,7 @@ def lowess_smooth_radar(ta,radec,r,frac=0.5):
     # Calculate the cartesian coordinates of space object relative to site
     t_ = (ta - ta[0]).sec/Const.T_nd
     r_nd = r/Const.L_nd
-    xyz = spherical_to_cartesian(r_nd,radec[:,1]*units.deg,radec[:,0]*units.deg) 
+    xyz = spherical_to_cartesian(r_nd,azalt[:,1]*units.deg,azalt[:,0]*units.deg) 
     xyz = np.stack([xyz_i.value for xyz_i in xyz]).T  
 
     _, x, w_x = loess_1d(t_,xyz[:,0],frac=frac)

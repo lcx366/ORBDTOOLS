@@ -43,6 +43,7 @@ t_J2000 = Time('2000-1-1 12:00:00',scale='ut1')
 jd_J2000 = t_J2000.jd
 
 # other constants
+twopi = 2 * np.pi
 C_D = 2.2 # drag codfficient
 C_R = 1.5 # radiation pressure codfficient between 1 and 2; 
           # 1 for blackbody, which means absorbing all of the momentum of the incident photon stream

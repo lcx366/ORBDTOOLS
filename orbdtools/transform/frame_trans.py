@@ -543,7 +543,37 @@ def ECI_NTW_mat(ecc,inc,raan,argp,nu,degrees=True):
     else: 
         NTW2ECI_mat = ECI2NTW_mat.transpose(0,2,1)  
 
-    return ECI2NTW_mat,NTW2ECI_mat    
+    return ECI2NTW_mat,NTW2ECI_mat  
+
+def ECI_RADAR_mat(inc,raan,argp,nu,degrees=True):  
+    """
+    Rotation matrix between the Earth Centred Inertial (ECI) reference frame and the RADAR(x:Along-track,y:Cross-track,z:Radial) reference frame.
+
+    Usage:
+        >>> ECI2RADAR_mat,RADAR2ECI_mat = ECI_RADAR_mat(inc,raan,argp,nu)
+    Inputs:
+        inc -> [float, list of float] Orbital inclination (i)  in [rad] or [deg]
+        raan -> [float, list of float] Longitude of the ascending node (Ω) in [rad] or [deg]
+        argp -> [float, list of float] Argument of periapsis (ω) in [rad] or [deg]
+        nu -> [float, list of float] True anomaly (ν) in [rad] or [deg]
+        degrees -> [bool,optional,default=True] If True, the angles are assumed to be in degrees
+    Outputs:
+        ECI2RADAR_mat,RADAR2ECI_mat -> [tuple] Rotation matrix 
+    """
+    if degrees: 
+        inc,raan,argp,nu = np.array(inc),np.array(raan),np.array(argp),np.array(nu)  
+    else:
+        inc,raan,argp,nu = np.rad2deg(inc),np.rad2deg(raan),np.rad2deg(argp),np.rad2deg(nu)  
+
+    ECI2RSW_mat,RSW2ECI_mat = ECI_RSW_mat(inc,raan,argp,nu)
+    ECI2RADAR_mat = Rot('Z',90) @ Rot('Y',90) @ ECI2RSW_mat
+
+    if ECI2RADAR_mat.ndim == 2:
+        RADAR2ECI_mat = ECI2RADAR_mat.T
+    else:
+        RADAR2ECI_mat = ECI2RADAR_mat.transpose(0,2,1)
+            
+    return ECI2RADAR_mat,RADAR2ECI_mat
 
 def RSW_BF_mat(triad,mode,degrees=True):  
     """

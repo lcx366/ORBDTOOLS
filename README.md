@@ -2,14 +2,14 @@
 
 [![PyPI version shields.io](https://img.shields.io/pypi/v/orbdtools.svg)](https://pypi.python.org/pypi/orbdtools/) [![PyPI pyversions](https://img.shields.io/pypi/pyversions/orbdtools.svg)](https://pypi.python.org/pypi/orbdtools/) [![PyPI status](https://img.shields.io/pypi/status/orbdtools.svg)](https://pypi.python.org/pypi/orbdtools/) [![GitHub contributors](https://img.shields.io/github/contributors/lcx366/ORBDTOOLS.svg)](https://GitHub.com/lcx366/ORBDTOOLS/graphs/contributors/) [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://GitHub.com/lcx366/ORBDTOOLS/graphs/commit-activity) [![GitHub license](https://img.shields.io/github/license/lcx366/ORBDTOOLS.svg)](https://github.com/lcx366/ORBDTOOLS/blob/master/LICENSE) [![Documentation Status](https://readthedocs.org/projects/orbdtools/badge/?version=latest)](http://orbdtools.readthedocs.io/?badge=latest) [![Build Status](https://travis-ci.org/lcx366/orbdtools.svg?branch=master)](https://travis-ci.org/lcx366/orbdtools)
 
-This package is on its way to become an archive of scientific routines for data processing related to Arc Matching, Arc Associating, Initial Orbit Determination(IOD), Cataloging OD, and Precise OD. Currently, the package only implements a small number of functional modules,  and subsequent new modules will be added and updated one after another. So far,  operations on Arc Matching include:
+This package is on its way to become an archive of scientific routines for data processing related to Arc Matching, Arc Associating, Initial Orbit Determination(IOD), Cataloging OD, and Precise OD. Currently, the package only implements a small number of functional modules, and subsequent new modules will be added and updated one after another. So far, operations on Arc Matching include:
 
-1. Matching of observation arcs based on optical angle measurement data to space objects in TLE file; 
-2. Matching of observation arcs based on radar measurement data(range+angle) to space objects in TLE file;
+1. Matching of angle measurement data to space objects with TLE file; 
+2. Matching of spaced-based radar measurement data(range+angle) to space objects with TLE file;
 3. Data processing related to TLE file:
    - Reading and parsing of TLE file
    - Calculation of the mean orbital elements(only long-term items are considered) in a certain epoch
-   - Orbital Propagation
+   - Orbital Propagation using SGP4/SDP4
 
 ## How to Install
 
@@ -57,7 +57,7 @@ A sample of  the *satno.txt* file is as follows:
     ['2022-05-18T23:07:15.444Z', '2022-05-23T22:00:02.000Z', '2022-05-24T06:32:39.874Z']
 
 <p align="middle">
-  <img src="readme_figs/df.png" width="600" />
+  <img src="readme_figs/df.png" width="700" />
 </p>
 
 #### Calculate the mean orbital elements at a certain epoch
@@ -68,7 +68,7 @@ A sample of  the *satno.txt* file is as follows:
 ```
 
 <p align="middle">
-  <img src="readme_figs/df_epoch.png" width="600" />
+  <img src="readme_figs/df_epoch.png" width="700" />
 </p>
 
 #### Orbital Propagation
@@ -91,20 +91,21 @@ A sample of  the *satno.txt* file is as follows:
 
 ### Arc Matching
 
-Load the observation file and extract the necessary data.
+#### For optical angle measurement data
+
+Load the observation file and extract the optical angle measurement data.
 
 ```python
 >>> import numpy as np
 >>> 
->>> obs_data = np.loadtxt('test/obs.dat',dtype=str,skiprows=1) # Load the observation file
+>>> obs_data = np.loadtxt('test/optical_obs.dat',dtype=str,skiprows=1) # Load the observation file
 >>> # extract the necessary data
 >>> t = obs_data[:,0] # Obsevation time in UTC
 >>> xyz_site = obs_data[:,1:4].astype(float) # Cartesian coordinates of the site in GCRF, [km]
 >>> radec = obs_data[:,4:6].astype(float) # Ra and Dec of space object, [deg]
->>> r = obs_data[:,6].astype(float) # Slant distance of the space object relative to the site, [km]
 ```
 
-#### Match the observation arc based on optical angle measurement data to space objects in TLE file
+Match the arc to space objects with TLE file.
 
 ```python
 >>> from orbdtools import ArcObs
@@ -131,11 +132,27 @@ Three types of matching results are summaried as follows
 | 0          | None              | No solution        | Failure | increase threshold |
 | -1         | list of NORAD IDs | Multiple solutions | Failure | decrease threshold |
 
-#### Match the observation arc based on radar measurement data(range+angle) to space objects in TLE file
+#### For space-based radar measurement data(range+angle)
+
+Load the observation file and extract the space-based radar measurement data. 
+
+```python
+>>> import numpy as np
+>>> 
+>>> obs_data = np.loadtxt('test/radar_obs.dat',dtype=str,skiprows=1) # Load the observation file
+>>> # extract the necessary data
+>>> t = obs_data[:,0] # Obsevation time in UTC
+>>> orbele_site = obs_data[:,1:7].astype(float) # Orbital elements(a,ecc,inc,raan,argp,true_anomaly) of the site
+>>> xyz_site = obs_data[:,7:10].astype(float) # Cartesian coordinates of the site in GCRF, [km]
+>>> azalt = obs_data[:,10:12].astype(float) # Azimuth and Altitude angle of space object, [deg]
+>>> r = obs_data[:,12].astype(float) # Slant distance of the space object relative to the site, [km]
+```
+
+Match the arc to space objects with TLE file. Note: the RADAR reference frame is defined as right-handed with x:Along-track,y:Cross-track,z:Radial; azimuth is measured clockwise from the x-axis.
 
 ```python
 >>> from orbdtools import ArcObs
->>> arc_radar = ArcObs({'t':t,'radec':radec,'r':r,'xyz_site':xyz_site}) # Added 'r' to optical angle measurement data 
+>>> arc_radar = ArcObs({'t':t,'azalt':azalt,'r':r,'xyz_site':xyz_site,'orbele_site':orbele_site}) # Load the necessary data
 >>> arc_radar.lowess_smooth()
 >>> arc_radar.arc_match(tle)
 >>> 
@@ -149,6 +166,9 @@ Three types of matching results are summaried as follows
     Target ID: 1616
 
 ## Change log
+
+- **0.0.3 — Aug 04, 2023**
+  - Change [Ra,Dec] to [Az,Alt] for space-based radar measurement data.
 
 - **0.0.2 — Jul 23, 2023**
   - Adjusted the default matching threshold to improve the matching success rate.

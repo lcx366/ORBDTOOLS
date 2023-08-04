@@ -2,13 +2,14 @@ import numpy as np
 from numpy.linalg import norm,lstsq
 from sgp4.api import SatrecArray
 from astropy.time import Time
-from astropy.coordinates import SkyCoord
+from astropy.coordinates import SkyCoord,spherical_to_cartesian,cartesian_to_spherical
 
 from .parse_tle import load_tle_file
-from ..transform.frame_trans import gcrf_teme_mat
+from ..transform.frame_trans import gcrf_teme_mat,ECI_RADAR_mat
 from ..utils.preprocessing import get_mid_point
+from ..utils.math import Matrix_dot_Vector
 
-def arcsat_match(tle,ta,xyz_site,radec,r,threshold_pre=[10,10],threshold_deep=[2000,5],threshold_slope=[400,2]):
+def arcsat_match(tle,ta,xyz_site,orbele_site,azalt,r,threshold_pre=[10,10],threshold_deep=[2000,5],threshold_slope=[400,2]):
     """
     Match the observation arc based on radra measurement data(range+angle) to space objects in TLE file.
 
@@ -18,7 +19,7 @@ def arcsat_match(tle,ta,xyz_site,radec,r,threshold_pre=[10,10],threshold_deep=[2
         tle -> object of class TLE
         ta -> [Astropy Time] time
         xyz_site -> [2D array] cartesian coordinates of site, [km]
-        radec -> [2D array] RA and Dec of space object, [deg]
+        azalt -> [2D array] Az and Alt of space object, [deg]
         r -> [array] Slant distance of the space object relative to the site, [km]
         threshold_pre -> [float,optional,default=[10,5]] Angular distance threshold and slant distance threshold for initial match, [deg,km]
         threshold_deep -> [float,optional,default=[500,1]] Angular distance threshold and slant distance threshold for deep match, [arcsec,km]
@@ -36,6 +37,15 @@ def arcsat_match(tle,ta,xyz_site,radec,r,threshold_pre=[10,10],threshold_deep=[2
     |  0         | None              | No solution        | Failure | increase threshold |
     | -1         | list of NORAD IDs | Multiple solutions | Failure | decrease threshold |    
     """
+    # Convert azalt to radec
+    az,alt = azalt.T
+    a,ecc,inc,raan,argp,nu = orbele_site.T
+    x,y,z = spherical_to_cartesian(1,np.deg2rad(alt),np.deg2rad(360-az))
+    xyz_RADAR = np.stack([x.value,y.value,z.value]).T
+    ECI2RADAR_mat,RADAR2ECI_mat = ECI_RADAR_mat(inc,raan,argp,nu)
+    xyz_ECI = Matrix_dot_Vector(RADAR2ECI_mat,xyz_RADAR)
+    _r,dec,ra = cartesian_to_spherical(xyz_ECI[:,0],xyz_ECI[:,1],xyz_ECI[:,2])
+    radec = np.stack([ra.deg,dec.deg]).T
 
     # load the objects list in TLE
     sats_list = tle._sats_Satrec
