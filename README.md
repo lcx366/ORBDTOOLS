@@ -358,7 +358,6 @@ A sample of  the *satno.txt* file is as follows:
 
 ```python
 >>> import numpy as np
->>>
 >>> tle_file = 'test/tle_20220524.txt'
 >>> epoch_obs = '2022-05-24T08:38:34.000Z' # Approximate epoch of the observed arc, which is optional
 >>> tle = TLE.from_file(tle_file,epoch_obs) # Only TLEs within a week before and after the observation epoch are considered
@@ -404,13 +403,12 @@ A sample of  the *satno.txt* file is as follows:
 
 ### Arc Matching
 
-#### For optical angle measurement data
+#### For optical angle-only measurements
 
-Load the observation file and extract the optical angle measurement data.
+Load the observation file and extract the optical angle-only measurement data.
 
 ```python
 >>> import numpy as np
->>> 
 >>> obs_data = np.loadtxt('test/optical_obs.dat',dtype=str,skiprows=1) # Load the observation file
 >>> # extract the necessary data
 >>> t = obs_data[:,0] # Obsevation time in UTC
@@ -445,7 +443,7 @@ Three types of matching results are summaried as follows
 | 0          | None              | No solution        | Failure | increase threshold |
 | -1         | list of NORAD IDs | Multiple solutions | Failure | decrease threshold |
 
-#### For space-based radar measurement data(range+angle)
+#### For space-based radar range+angle measurements
 
 Load the observation file and extract the space-based radar measurement data. 
 
@@ -480,16 +478,17 @@ Match the arc to space objects with TLE file. Note: the RADAR reference frame is
 
 ### Implementation of some classic Initial Orbit Determination methods
 
-For optical angle-only data, the methods of Near-Circular Orbit Hypothesis, Gauss, Laplace, Multiple-points Laplace, Double-R, Gooding, and FG-Series are provided for determining the initial orbit of space objects in this package.
+For optical angle-only measurement data, the methods of **Near-Circular Orbit Hypothesis**, **Gauss**, **Laplace**, **Multiple-points Laplace**, **Double-R**, **Gooding**, and **FG-Series** are provided for determining the initial orbit of space objects in this package. For radar range+angle measurement data, the methods of **Gibbs/Herrick-Gibbs** and **Elliptical Orbit Fitting** are provided for determining the initial orbit of space objects in this package.
 
-Extract the necessary information for Initial Orbit Determination(IOD) from **optical angle-only** measurements.
+Here we use ground-based optical angle-only  measurements, space-based optical angle-only measurements and radar range+angle measurements as examples to test various  IOD methods and compare them with real orbits from TLE.
+
+Extract the necessary information for Initial Orbit Determination(IOD) from **ground-based optical angle-only** measurements.
 
 ```python
 >>> import numpy as np
->>> # Groundbased observations
 >>> obs_data = np.loadtxt('test5/T25872_KUN2_2.dat',dtype=str,skiprows=1) # Load the observation file
 >>> obs_data = obs_data[::10]
->>> # extract the necessary data
+>>> # Extract the necessary data
 >>> t = obs_data[:,0] # Obsevation time in UTC
 >>> radec = obs_data[:,1:3].astype(float) # Ra and Dec of the space object, in [hour,deg]
 >>> xyz_site = obs_data[:,3:6].astype(float) # Cartesian coordinates of the site in GCRF, in [km]
@@ -514,7 +513,9 @@ Set the *Earth* as the central body of attraction.
 
 #### Near-Circular Orbit Hypothesis method
 
-The traditional two-point Near-Circular Orbit Hypothesis method is improved by combining the three-point Gibbs/Herrick-Gibbs method in this package. For more information about the traditional method, please refer to *张晓祥,吴连大,熊建宁.空间目标的圆轨道跟踪法[J].天文学报, 2003, 44(4):11.DOI:10.3321/j.issn:0001-5245.2003.04.010.*
+The traditional two-point Near-Circular Orbit Hypothesis method is improved by combining the three-point Gibbs/Herrick-Gibbs method in this package. For more information about the traditional method, please refer to 
+
+- *张晓祥,吴连大,熊建宁.空间目标的圆轨道跟踪法[J].天文学报, 2003, 44(4):11.DOI:10.3321/j.issn:0001-5245.2003.04.010.*
 
 ```python
 >>> arc_iod.circular(ellipse_only=False)
@@ -527,13 +528,240 @@ The optional parameter `ellipse_only` is a switch for filtering out elliptical o
 
 #### Gauss method
 
-For more information about the method, please refer to *Curtis H D. Orbital Mechanics for Engineering Students: Revised 4th edition[M]. Butterworth-Heinemann, 2020.*
+For more information about the method, please refer to 
+
+- *Curtis H D. Orbital Mechanics for Engineering Students: Revised 4th edition[M]. Butterworth-Heinemann, 2020.*
 
 ```python
 >>> arc_iod.gauss(ellipse_only=False)
 >>> print(arc_iod.df.to_string())
 >>> #                      epoch         a      ecc        inc       raan        argp          nu           M         h   status
 >>> # 0  2022-01-18T21:31:36.000  1.313445  0.00228  52.038608  51.553549  148.236551  346.253751  346.315736  1.146053  success
+```
+
+#### Laplace method
+
+For more information about the method, please refer to
+
+- *Vallado D. Fundamentals of Astrodynamics and Applications(4th)[M], Microcosm Press, 2013.*
+
+- *Bate R R, Mueller D D, White J E, et al. Fundamentals of astrodynamics(2nd)[M]. Courier Dover Publications, 2020.*
+
+```python
+>>> arc_iod.laplace(ellipse_only=False)
+>>> print(arc_iod.df.to_string())
+>>> #                      epoch         a       ecc        inc       raan        argp          nu           M         h  status
+>>> # 0  2022-01-18T21:31:36.000  1.135273  0.224665  52.795486  54.588879  325.396385  168.002859  161.612157  1.038254  failed
+```
+
+#### Multiple-points Laplace method
+
+For more information about the method, please refer to
+
+- *Bate R R, Mueller D D, White J E, et al. Fundamentals of astrodynamics(2nd)[M]. Courier Dover Publications, 2020.*
+
+```python
+>>> arc_iod.multilaplace(ellipse_only=False)
+>>> print(arc_iod.df.to_string())
+>>> #                      epoch         a       ecc        inc       raan        argp          nu           M         h  status
+>>> # 0  2022-01-18T21:31:36.000  1.275725  0.072221  53.501942  53.019178  325.045457  168.931844  167.254415  1.126531  failed
+```
+
+#### Double-R method
+
+The traditional three-point Double-R method is improved by combining the three-point Gibbs/Herrick-Gibbs method in this package. For more information about the traditional method, please refer to
+
+- Vallado D. Fundamentals of Astrodynamics and Applications(4th)[M], Microcosm Press, 2013.
+
+```python
+>>> arc_iod.doubleR(ellipse_only=False)
+>>> print(arc_iod.df.to_string())
+>>> #                      epoch         a       ecc        inc       raan        argp          nu           M         h   status
+>>> # 0  2022-01-18T21:31:36.000  1.313601  0.002381  52.039102  51.554024  147.573208  346.917006  346.978664  1.146121  success
+```
+
+#### Gooding method
+
+For more information about the method, please refer to
+
+- *Gooding R H. A new procedure for the solution of the classical problem of minimal orbit determination from three lines of sight[J]. Celestial Mechanics and Dynamical Astronomy, 1996, 66: 387-423.*
+- *Izzo D. Revisiting Lambert’s problem[J]. Celestial Mechanics and Dynamical Astronomy, 2015, 121: 1-15.*
+- *Curtis H D. Orbital Mechanics for Engineering Students: Revised 4th edition[M]. Butterworth-Heinemann, 2020.*
+
+```python
+>>> # solve the Lambert's problem with the universal variable method
+>>> ele_dict = arc_iod.gooding(method='universal',ellipse_only=False)
+>>> print(arc_iod.df.to_string())
+>>> #                      epoch         a       ecc        inc      raan        argp     nu      M         h   status
+>>> # 0  2022-01-18T21:31:36.000  1.310295  0.000003  52.009667  51.56095  314.498906  180.0  180.0  1.144681  success
+>>> # solve the Lambert's problem with the method by Izzo
+>>> arc_iod.gooding(method='izzo',ellipse_only=False)
+>>> print(arc_iod.df.to_string())
+>>> #                      epoch         a       ecc        inc      raan        argp     nu      M         h   status
+>>> # 0  2022-01-18T21:31:36.000  1.310295  0.000003  52.009667  51.56095  314.498906  180.0  180.0  1.144681  success
+```
+
+#### FG-Series method
+
+For more information about the method, please refer to
+
+- *李光宇.天体测量和天体力学基础[M].科学出版社,2015.*
+
+- *刘林.卫星轨道力学算法[M].南京大学出版社,2019.*
+
+- *Bate R R, Mueller D D, White J E, et al. Fundamentals of astrodynamics(2nd)[M]. Courier Dover Publications, 2020.*
+
+```python
+>>> arc_iod.fg_series(ellipse_only=False)
+>>> print(arc_iod.df.to_string())
+>>> #                      epoch        a      ecc        inc       raan        argp          nu           M         h   status
+>>> # 0  2022-01-18T21:31:36.000  1.31294  0.00191  52.036942  51.554157  149.873847  344.616532  344.674512  1.145834  success
+```
+
+Compare the results with real orbits from TLE.
+
+```python
+>>> from orbdtools import TLE
+>>> tle_file = 'test5/tle_20220119.txt'
+>>> tle = TLE.from_file(tle_file)
+>>> tle_update = tle.atEpoch('2022-01-18T21:31:36.000')
+>>> tle_df = tle_update.df
+>>> sat_df = tle_df[tle_df['noradid']==25872]
+>>> print(sat_df.to_string())
+>>> #       noradid         a       ecc      inc       raan       argp           M        h     bstar                     epoch
+>>> # 1900    25872  1.312288  0.001365  51.9388  51.796242  187.68949  306.956591  1.14555  0.000343  2022-01-18T21:31:36.000Z
+```
+
+For the **space-based optical angle-only** measurements, we use the same processing flow as the ground-based measurements to test IOD methods mentioned above.
+
+```python
+>>> import numpy as np
+>>> obs_data = np.loadtxt('test3/T22694_S1_1_C5_1.dat',dtype=str,skiprows=1) # Load the observation file
+>>> obs_data = obs_data[::5]
+>>> # extract the necessary data
+>>> t = obs_data[:,0] # Obsevation time in UTC
+>>> radec = obs_data[:,1:3].astype(float) # Ra and Dec of space object, in [deg]
+>>> radec[:,0] *= 15 # Convert hours to degrees
+>>> xyz_site = obs_data[:,3:6].astype(float) # Cartesian coordinates of the site in GCRF, [km]
+>>> from orbdtools import ArcObs
+>>> arc_optical = ArcObs({'t':t,'radec':radec,'xyz_site':xyz_site}) # Load the necessary data
+>>> arc_optical.lowess_smooth()
+>>> arc_iod.circular(ellipse_only=False)
+>>> print(arc_iod.df.to_string())
+>>> arc_iod.gauss(ellipse_only=False)
+>>> print(arc_iod.df.to_string())
+>>> arc_iod.laplace(ellipse_only=False)
+>>> print(arc_iod.df.to_string())
+>>> arc_iod.multilaplace(ellipse_only=False)
+>>> print(arc_iod.df.to_string())
+>>> arc_iod.doubleR(ellipse_only=False)
+>>> print(arc_iod.df.to_string())
+>>> ele_dict = arc_iod.gooding(method='universal',ellipse_only=False)
+>>> print(arc_iod.df.to_string())
+>>> arc_iod.gooding(method='izzo',ellipse_only=False)
+>>> print(arc_iod.df.to_string())
+>>> arc_iod.fg_series(ellipse_only=False)
+>>> print(arc_iod.df.to_string())
+>>>                      epoch         a           ecc        inc        raan        argp          nu           M            h   status
+>>> 0  2022-03-24T19:43:11.000  6.620564      0.000002  15.122863    6.748521  184.996759    1.038925     1.03892     2.573046  success
+>>>                      epoch         a           ecc        inc        raan        argp          nu           M            h   status
+>>> 0  2022-03-24T19:43:11.000 -0.002950  77687.676046  45.163396  286.360923  179.950664    8.310002  333.175406  4219.232928   failed
+>>> 1  2022-03-24T19:43:11.000  6.859966      0.025903  18.530465    3.513682  170.273591   15.725365   14.935701     2.618275  success
+>>> 2  2022-03-24T19:43:11.000  6.616976      0.007160   2.819296  204.772918  181.406380  184.848294  184.918012     2.572282   failed
+>>>                      epoch         a           ecc        inc        raan        argp          nu           M            h   status
+>>> 0  2022-03-24T19:43:11.000 -0.002950  77704.757170  45.163444  286.360610  179.949294    8.311361  223.906534  4220.111239   failed
+>>> 1  2022-03-24T19:43:11.000  6.859363      0.025809  18.531228    3.511614  170.260444   15.738826   14.951304     2.618166  success
+>>> 2  2022-03-24T19:43:11.000  6.616654      0.007214   2.820695  204.774097  181.496819  184.758445  184.827393     2.572219   failed
+>>>                      epoch         a           ecc        inc        raan        argp          nu           M            h   status
+>>> 0  2022-03-24T19:43:11.000 -0.029135   2520.867018  44.311504  279.565977    0.649530    7.579402  123.613228   430.287289   failed
+>>> 1  2022-03-24T19:43:11.000  6.548644      0.008583   0.345056   21.958307    1.134312  184.607814  184.687336     2.558938  success
+>>> 2  2022-03-24T19:43:11.000  6.422555      0.022935  10.780522   11.045074  356.693901  189.357780  189.792484     2.533609  success
+>>>                      epoch         a           ecc        inc        raan        argp          nu           M            h   status
+>>> 0  2022-03-24T19:43:11.000  6.455367      0.025672  15.406771    6.858407   10.275297  175.652244  175.424872     2.539904  success
+>>>                      epoch         a           ecc        inc        raan        argp          nu           M            h   status
+>>> 0  2022-03-24T19:43:11.000  6.620564      0.000002  15.122845    6.749191  186.035035    0.000815    0.000815     2.573046  success
+>>>                      epoch         a           ecc        inc        raan        argp          nu           M            h   status
+>>> 0  2022-03-24T19:43:11.000  6.620564      0.000002  15.122845    6.749191  186.035035    0.000815    0.000815     2.573046  success
+>>>                      epoch         a           ecc        inc        raan        argp          nu           M            h   status
+>>> 0  2022-03-24T19:43:11.000  6.559381      0.005895   0.807161   21.111149  359.195522  186.897296  186.978778     2.561084  success
+>>> from orbdtools import TLE
+>>> tle_file = 'test3/tle_20220325.txt'
+>>> tle = TLE.from_file(tle_file)
+>>> tle_update = tle.atEpoch('2022-03-24T19:43:11.000')
+>>> tle_df = tle_update.df
+>>> sat_df = tle_df[tle_df['noradid']==22694]
+>>> print(sat_df.to_string())
+>>> #      noradid         a       ecc        inc      raan        argp           M         h  bstar                     epoch
+>>> # 203    22694  6.611253  0.000843  14.627818  7.031644  295.619471  250.970436  2.571235    0.0  2022-03-24T19:43:11.000Z
+```
+
+For the **space-based radar range+angle** measurements, we use the methods of **Gibbs/Herrick-Gibbs** and **Elliptical Orbit Fitting** to determine the initial orbit of space objects.
+
+Extract the necessary information for Initial Orbit Determination(IOD) from **space-based radar range+angle** measurements.
+
+```python
+>>> import numpy as np
+>>> obs_data = np.loadtxt('test/radar_obs.dat',dtype=str,skiprows=1) # Load the observation file
+>>> # extract the necessary data
+>>> t = obs_data[:,0] # Obsevation time in UTC
+>>> orbele_site = obs_data[:,1:7].astype(float) # Orbital elements(a,ecc,inc,raan,argp,true_anomaly) of the site
+>>> xyz_site = obs_data[:,7:10].astype(float) # Cartesian coordinates of the site in GCRF, [km]
+>>> azalt = obs_data[:,10:12].astype(float) # Azimuth and Altitude angle of space object, [deg]
+>>> r = obs_data[:,12].astype(float) # Slant distance of the space object relative to the site, [km]
+```
+
+Load the extracted data to `ArcObs`, and eliminate outliers using the method of LOWESS.
+
+```python
+>>> from orbdtools import ArcObs
+>>> arc_radar = ArcObs({'t':t,'azalt':azalt,'r':r,'xyz_site':xyz_site,'orbele_site':orbele_site}) # Load the necessary data
+>>> arc_radar.lowess_smooth()
+```
+
+Set the *Earth* as the central body of attraction.
+
+```python
+>>> from orbdtools import Body
+>>> earth = Body.from_name('Earth')
+>>> arc_iod = arc_radar.iod(earth)
+```
+
+#### Gibbs/Herrick-Gibbs method
+
+For more information about the method, please refer to
+
+- *Vallado D. Fundamentals of Astrodynamics and Applications(4th)[M], Microcosm Press, 2013.*
+
+- *Curtis H D. Orbital Mechanics for Engineering Students: Revised 4th edition[M]. Butterworth-Heinemann, 2020.*
+
+```python
+>>> arc_iod.gibbs()
+>>> print(arc_iod.df.to_string())
+>>> #                      epoch         a       ecc         inc        raan        argp          nu           M         h   status
+>>> # 0  2022-05-24T08:38:34.000  1.191607  0.106731  144.132624  292.686583  269.560174  179.172878  178.981084  1.085372  success
+```
+
+#### Elliptical Orbit Fitting method
+
+```python
+>>> arc_iod.ellipse()
+>>> print(arc_iod.df.to_string())
+>>> #                      epoch         a       ecc       inc        raan        argp          nu           M         h   status
+>>> # 0  2022-05-24T08:38:34.000  1.191645  0.106694  144.1329  292.686922  269.482702  179.250624  179.076922  1.085394  success
+```
+
+Compare the results with real orbits from TLE.
+
+```python
+>>> from orbdtools import TLE
+>>> tle_file = 'test/tle_20220524.txt'
+>>> tle = TLE.from_file(tle_file)
+>>> tle_update = tle.atEpoch('2022-05-24T08:38:34.000')
+>>> tle_df = tle_update.df
+>>> sat_df = tle_df[tle_df['noradid']==1616]
+>>> print(sat_df.to_string())
+>>> #     noradid         a      ecc       inc        raan        argp           M        h     bstar                     epoch
+>>> # 46     1616  1.191409  0.10819  144.2312  293.055123  269.557158  179.098994  1.08511  0.000606  2022-05-24T08:38:34.000Z
 ```
 
 ## Change log
@@ -559,11 +787,12 @@ For more information about the method, please refer to *Curtis H D. Orbital Mech
 
 ## Next Release
 
-- Implement IOD using the method of FG-Series for radar measurement data(range+angle)
-- Improve the initial orbit based on the SGP4/SDP4 propagator.
+- Implement IOD using the method of FG-Series for radar range+angle measurements
+- Improve the initial orbit based on the SGP4/SDP4 propagator
+- Implement the Battin algorithm for solving the lambert‘s problem
 
 ## Reference
 
 - [Skyfield](https://rhodesmill.org/skyfield/)
 - [sgp4](https://pypi.org/project/sgp4/)
-- [lowess](https://pypi.org/project/loess/)
+- [lowess](https://pypi.org/project/loess/)README.md
