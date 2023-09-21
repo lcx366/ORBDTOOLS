@@ -18,25 +18,18 @@ v_sgp4 = Re_sgp4/T_sgp4
 ke_sgp4 = 1
 k2_sgp4 = 5.41308e-4
 
-# non-dimensional quantities
-L_nd = Re
-# M_nd = Me
-T_nd = np.sqrt(Re**3/mu)
-v_nd = L_nd / T_nd # in [L]/[T]
-G_nd = 1 # in [L]^3/([M]*[T]^2)
-mu_nd = 1 # in [L]^3/[T]^2
+# non-dimensional units
+L_nd_unit = Re
+mu_nd_unit = mu # in [L_nd]^3/[T_nd]^2
+T_nd_unit = np.sqrt(L_nd_unit**3/mu_nd_unit) # in ([L_nd]^3/[mu_nd])**0.5
+v_nd_unit = L_nd_unit / T_nd_unit # in [L_nd]/[T_nd]
+G_nd_unit = 1 # in [L_nd]^3/([M_nd]*[T_nd]^2)
 
 au = 1.495978707e8 # Astronomical unit, [km]
 S_R = 4.56e-6 # solar radiation pressure, [N/m^2]
-R_sun = 6.957e5 # Average radius of sun in [km]
-R_moon = 1737.4 # Average radius of moon in [km]
 stellar_year = 365.2564 # mean solar day
 n_sunsync = 1.99096871e-7 # the precession rate of Sun-synchronous orbit in rad/s
 
-# Standard gravitational parameter
-mu_sun = 1.32712440018e11 # GM for Sun, [km^3/s^2]
-mu_moon = 4904.8695 # GM for Moon, [km^3/s^2]
-mu_jup = 1.26686534e8 # GM for Jupiter, [km^3/s^2]
 
 # Time 
 t_J2000 = Time('2000-1-1 12:00:00',scale='ut1')
@@ -44,12 +37,3 @@ jd_J2000 = t_J2000.jd
 
 # other constants
 twopi = 2 * np.pi
-C_D = 2.2 # drag codfficient
-C_R = 1.5 # radiation pressure codfficient between 1 and 2; 
-          # 1 for blackbody, which means absorbing all of the momentum of the incident photon stream
-          # 2 means reflecting all of the momentum of the incident photon stream
-
-# parameters configuration for targets
-m = 100 # mass, [kg]
-A_D = np.pi/4 # section area for drag, [m^2]
-A_R = np.pi/4 # section area for solar radiation, [m^2]

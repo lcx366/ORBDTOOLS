@@ -10,13 +10,13 @@ def get_mid_point(t,*args):
     Extract the median point from the observation data.
 
     Usage:
-        >>> t_mid,xyz_site,radec_mid = get_mid_point(t,xyz_site,radec)
+        >>> t_mid,xyz_site_mid,radec_mid = get_mid_point(t,xyz_site,radec)
     Inputs:
-        t -> [Astropy Time or Skyfield Time] time
+        t -> [array-like,Astropy Time or Skyfield Time] time
         xyz_site -> [array like, optional] cartesian coordinates of site
         radec -> [array like, optional] RA and Dec of space object
     Outputs:
-        t_mid -> [object] median time in format of Astropy Time or Skyfield Time
+        t_mid -> [object] median time in form of Astropy Time or Skyfield Time
         xyz_site_mid -> [array like, optional] cartesian coordinates corresponding to the median time
         radec_mid -> [array like, optional] RA and Dec corresponding to the median time  
     """
@@ -31,9 +31,9 @@ def get_mid_point(t,*args):
     for cont in args:
         out.append(cont[mi])    
 
-    return out 
+    return out   
 
-def lowess_smooth_optical(ta,radec,frac=0.5):
+def lowess_smooth_optical(ta,radec,frac=0.5,T_scale=Const.T_nd_unit):
     """
     Remove outliers in optical data with the method of LOWESS (Locally Weighted Scatterplot Smoothing)
     Here, LOWESS uses a weighted **linear regression** in default.
@@ -41,14 +41,15 @@ def lowess_smooth_optical(ta,radec,frac=0.5):
     Usage:
         >>> flag = lowess_smooth_optical(ta,radec)
     Inputs:
-        ta -> [array of Astropy Time] time sequence
+        ta -> [array of Astropy Time] Time sequence
         radec -> [2D array] RA and Dec of space object, [deg]
-        frac -> [float,optional,default=0.5] The fraction of the data used in local regression. The value of fraction is between 0 and 1.  
+        frac -> [float,optional,default=0.5] The fraction of the data used in local regression. The value of fraction is between 0 and 1.
+        T_scale -> [float,optional,default=Const.T_nd_unit] Time scale, defaults to sqrt([L_nd]**3/[mu_nd]), where [L_nd]=6378.137 [km] and [mu_nd]=398600.4418 [km^3/s^2] are the equatorial radius and GM of the Reference Earth Model - WGS84 respectively.
     Outputs:
         flag -> [array of bool] Flag of data points. If False, the data point is an outlier.        
     """
     # Calculate line of sight
-    t_ = (ta - ta[0]).sec/Const.T_nd
+    t_ = (ta - ta[0]).sec/T_scale
     los = spherical_to_cartesian(1,radec[:,1]*units.deg,radec[:,0]*units.deg) 
     los = np.stack([los_i.value for los_i in los]).T  
 
@@ -62,7 +63,7 @@ def lowess_smooth_optical(ta,radec,frac=0.5):
 
     return flag
 
-def lowess_smooth_radar(ta,azalt,r,frac=0.5):
+def lowess_smooth_radar(ta,azalt,r,frac=0.5,L_scale=Const.L_nd_unit,T_scale=Const.T_nd_unit):
     """
     Remove outliers in radar data with the method of LOWESS (Locally Weighted Scatterplot Smoothing)
     Here, LOWESS uses a weighted **linear regression** in default.
@@ -70,16 +71,18 @@ def lowess_smooth_radar(ta,azalt,r,frac=0.5):
     Usage:
         >>> flag = lowess_smooth_radar(ta,radec,r)
     Inputs:
-        ta -> [array of Astropy Time] time sequence
+        ta -> [array of Astropy Time] Time sequence
         azalt -> [2D array] Az and Alt of space object, [deg]
         r -> [array] Slant distance of the space object relative to the site, [km]
         frac -> [float,optional,default=0.5] The fraction of the data used in local regression. The value of fraction is between 0 and 1.  
+        L_scale -> [float,optional,default=Const.L_nd_unit] Length scale, defaults to the equatorial radius of the Reference Earth Model - WGS84.  
+        T_scale -> [float,optional,default=Const.T_nd_unit] Time scale, defaults to sqrt([L_nd]**3/[mu_nd]), where [L_nd]=6378.137 [km] and [mu_nd]=398600.4418 [km^3/s^2] are the equatorial radius and GM of the Reference Earth Model - WGS84 respectively.
     Outputs:
         flag -> [array of bool] Flag of data points. If False, the data point is an outlier.        
     """
     # Calculate the cartesian coordinates of space object relative to site
-    t_ = (ta - ta[0]).sec/Const.T_nd
-    r_nd = r/Const.L_nd
+    t_ = (ta - ta[0]).sec/T_scale
+    r_nd = r/L_scale
     xyz = spherical_to_cartesian(r_nd,azalt[:,1]*units.deg,azalt[:,0]*units.deg) 
     xyz = np.stack([xyz_i.value for xyz_i in xyz]).T  
 

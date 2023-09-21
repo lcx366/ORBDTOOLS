@@ -2,7 +2,7 @@ from setuptools import setup,find_packages
 
 setup(
     name='orbdtools',
-    version='0.0.3',
+    version='0.1.0',
     description='A set of routines for data processing related to ORBit Determination(ORBD) of space objects',
     author='Chunxiao Li',
     author_email='lcx366@126.com',
@@ -25,11 +25,15 @@ setup(
     packages = find_packages(),
     include_package_data=True,
     install_requires=[
-        'skyfield',
         'astropy>=4.3.1',
-        'numpy',
+        'skyfield',
         'sgp4',
+        'spacetrack',
+        'numpy',
+        'scipy',
         'loess',
-        'wget'
+        'wget',
+        'pandas',
+        'colorama'
         ],
 )

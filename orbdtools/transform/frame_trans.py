@@ -16,7 +16,7 @@ ENZ(East North Zenith) is used by <Curtis, Howard. Orbital Mechanics for Enginee
 
 def reflect_axis(axis):
     """
-    Reflect a reference frame by an axis, and return a transform matrix. 
+    Reflect a reference frame by an axis. 
     For example, X Y Z ---> -X Y Z by 'X' axis, X Y Z ---> X -Y Z by 'Y' axis, and X Y Z ---> X Y -Z by 'Z' axis
 
     Usage:
@@ -28,7 +28,7 @@ def reflect_axis(axis):
     Inputs:
         axis -> [str] Reflection axis. It can be 'X', 'Y', and 'Z'
     Outputs:
-        M -> [2D array] Transform matrix
+        M -> [2D array] Transformation matrix
     """
     M = np.eye(3)
     if axis == 'X':
@@ -37,11 +37,13 @@ def reflect_axis(axis):
         M[1,1] = -1
     elif axis == 'Z':
         M[2,2] = -1   
+    else:
+        raise Exception("reflection axis must be in ['X','Y','Z']")
     return M   
 
 def reflect(seq):
     """
-    Reflect a reference frame by a sequence of axes, and return a transform matrix. 
+    Reflect a reference frame by a sequence of axes. 
 
     Usage:
         >>> M = reflect('XXY')
@@ -50,7 +52,7 @@ def reflect(seq):
         >>> print(v2)
         # we get [1.,  -2.,  3.]
     Inputs:
-        seq -> [str] Sequence of reflect axis, such as ['X','X','Y']
+        seq -> [str] Sequence of reflection axis, such as 'XXY'
     Outputs:
         M -> [2D array] Transform matrix
     """
@@ -92,20 +94,29 @@ def Rot(seq,angles,degrees=True):
 
 def euler2vectors(angles,degrees=True):
     """
-    Calculate the basis vectors of the source reference frame in target reference frame 
+    Calculate the basis vectors of the source reference frame(XYZ) in target reference frame(xyz). 
 
     Usage:
         >>> angles = [60,30,40]
-        >>> vector = euler2vector(angles)
+        >>> angles = [[60,30,40],[10,120,-70]]
+        >>> vector_x,vector_y,vector_z = euler2vectors(angles)
     Inputs:
-        angles -> [list of float] Euler angles in sequence of 'ZXZ' in [rad] or [deg]
+        angles -> [list of float or 2D array with shape of nx3] Euler angles in sequence of 'ZXZ' in [rad] or [deg]
         degrees -> [bool,optional,default=True] If True, the euler angles are assumed to be in degrees 
     Outputs:
-        vectors -> [tuple of array] Basis vector for axis-X, axis-Y, axis-Z respectively
+        vector_x -> [array-like] Basis vector for axis-X
+        vector_y -> [array-like] Basis vector for axis-Y
+        vector_z -> [array-like] Basis vector for axis-Z
     """
-    if len(angles) != 3: raise Exception('Euler angles should contain three angles.')
-    rotation_matrix = Rotation.from_euler('ZXZ',angles,degrees).as_matrix() 
-    vectorX,vectorY,vectorZ = rotation_matrix.T
+    angles = np.array(angles)
+    if len(angles.T) != 3: raise Exception('Euler angles should contain three angles.')
+    rotation_matrix = Rotation.from_euler('ZXZ',angles,degrees).as_matrix()
+
+    if angles.ndim == 1:
+        vectorX,vectorY,vectorZ = rotation_matrix.T
+    elif angles.ndim == 2:
+        vectorX,vectorY,vectorZ = rotation_matrix.transpose(2,0,1)
+
     return vectorX,vectorY,vectorZ    
 
 def lrf_topo_mat(alpha,degrees=True):
@@ -118,11 +129,10 @@ def lrf_topo_mat(alpha,degrees=True):
         alpha -> [float,list of float] Azimuth of the launch direction in [rad] or [deg]
         degrees -> [bool,optional,default=True] If True, the azimuth is assumed to be in degrees
     Outputs:
-        lrf2topo_mat,topo2lrf_mat -> [tuple] Rotation matrix
+        lrf2topo_mat -> [2D array or 3D array with shape of nx3x3] Rotation matrix from lrf to topo
+        topo2lrf_mat -> [2D array or 3D array with shape of nx3x3] Rotation matrix from topo to lrf
     """
-    if degrees: 
-        alpha = np.array(alpha)
-    else:
+    if not degrees: 
         alpha = np.rad2deg(alpha)
 
     # Convert NEZ to right-handed NWZ, then apply rotation
@@ -148,7 +158,8 @@ def topo_itrf_mat(lon,lat,degrees=True):
         lat -> [float,list of float] Latitude of site in [rad] or [deg]
         degrees -> [bool,optional,default=True] If True, the longitude and latitude are assumed to be in degrees
     Outputs: 
-        topo2itrf_mat,itrf2topo_mat -> [tuple] Rotation matrix
+        topo2itrf_mat -> [2D array or 3D array with shape of nx3x3] Rotation matrix from topo to itrf
+        itrf2topo_mat -> [2D array or 3D array with shape of nx3x3] Rotation matrix from itrf to topo
     """
     if degrees: 
         lon,lat = np.array(lon),np.array(lat) 
@@ -172,9 +183,10 @@ def gcrf_itrf_mat(ta):
     Usage:
         >>> gcrf2itrf_mat,itrf2gcrf_mat = gcrf_itrf_mat(ta)
     Inputs:
-        ta -> Astropy Time object
+        ta -> [array-like of Astropy Time object] Time to make transformation
     Outputs:
-        gcrf2itrf_mat,itrf2gcrf_mat -> [tuple] Rotation matrix
+        gcrf2itrf_mat -> [2D array or 3D array with shape of nx3x3] Rotation matrix from gcrf to itrf
+        itrf2gcrf_mat -> [2D array or 3D array with shape of nx3x3] Rotation matrix from itrf to gcrf
     """
     ts = data_prepare.ts
     tf = ts.from_astropy(ta)
@@ -195,19 +207,18 @@ def gcrf_topo_mat(lon,lat,ta,degrees=True):
     Usage:
         >>> gcrf2topo_mat,topo2gcrf_mat = gcrf_topo_mat(lon,lat,ta)
     Inputs:
-        lon -> [float,list of float] Longitude of site in [rad] or [deg]
-        lat -> [float,list of float] Latitude of site in [rad] or [deg] 
-        ta -> Astropy Time object
+        lon -> [float,list of float, m=len(lon)] Longitude of site in [rad] or [deg]
+        lat -> [float,list of float, m=len(lat)] Latitude of site in [rad] or [deg] 
+        ta -> [array-like of Astropy Time object, n=len(ta)] Time to make transformation
         degrees -> [bool,optional,default=True] If True, the longitude and latitude are assumed to be in degrees 
     Outputs:
-        gcrf2topo_mat,topo2gcrf_mat -> [tuple] Rotation matrix
+        gcrf2topo_mat -> [3D array with shape of 1x3x3 or 4D array with shape of mxnx3x3] Rotation matrix from gcrf to topo
+        topo2gcrf_mat -> [3D array with shape of 1x3x3 or 4D array with shape of mxnx3x3] Rotation matrix from topo to gcrf
     """
     ts = data_prepare.ts
     tf = ts.from_astropy(ta)
 
-    if degrees: 
-        lon,lat = np.array(lon),np.array(lat) 
-    else:
+    if not degrees:
         lon,lat = np.rad2deg(lon),np.rad2deg(lat) 
 
     site = wgs84.latlon(lat, lon)
@@ -246,9 +257,10 @@ def gcrf_teme_mat(ta):
     Usage:
         >>> gcrf2teme_mat,teme2gcrf_mat = gcrf_teme_mat(ta)
     Inputs:
-        ta -> Astropy Time object
+        ta -> [array-like of Astropy Time object] Time to make transformation
     Outputs:
-        gcrf2teme_mat,teme2gcrf_mat -> Rotation matrix
+        gcrf2teme_mat -> [2D array or 3D array with shape of nx3x3] Rotation matrix from gcrf to teme
+        teme2gcrf_mat -> [2D array or 3D array with shape of nx3x3] Rotation matrix from teme to gcrf
     """
     ts = data_prepare.ts
     tf = ts.from_astropy(ta)
@@ -269,19 +281,18 @@ def meme_topo_mat(lon,lat,ta,degrees=True):
     Usage:
         >>> meme2topo_mat,topo2meme_mat = meme_topo_mat(lon,lat,ta)
     Inputs:
-        lon -> [float,list of float] Longitude of site in [rad] or [deg]
-        lat -> [float,list of float] Latitude of site in [rad] or [deg]
-        ta -> Astropy Time object
+        lon -> [float,list of float, m=len(lon)] Longitude of site in [rad] or [deg]
+        lat -> [float,list of float, m=len(lat)] Latitude of site in [rad] or [deg]
+        ta -> [array-like of Astropy Time object, n=len(ta)] Time to make transformation
         degrees -> [bool,optional,default=True] If True, the longitude and latitude are assumed to be in degrees
     Outputs:
-        meme2topo_mat,topo2meme_mat -> [tuple] Rotation matrix
+        meme2topo_mat -> [3D array with shape of 1x3x3 or 4D array with shape of mxnx3x3] Rotation matrix from meme to topo
+        topo2meme_mat -> [3D array with shape of 1x3x3 or 4D array with shape of mxnx3x3] Rotation matrix from topo to meme
     """
     ts = data_prepare.ts
     tf = ts.from_astropy(ta)
 
-    if degrees: 
-        lon,lat = np.array(lon),np.array(lat) 
-    else:
+    if not degrees: 
         lon,lat = np.rad2deg(lon),np.rad2deg(lat) 
 
     gcrf2topo_mat,topo2gcrf_mat = gcrf_topo_mat(lon,lat,ta)
@@ -311,17 +322,16 @@ def lrf_gcrf_mat(lon,lat,alpha,ta,degrees=True):
         >>> lrf2gcrf_mat,gcrf2lrf_mat = lrf_gcrf_mat(lon,lat,alpha,ta)
 
     Inputs:
-        lon -> [float,list of float] Longitude of site in [rad] or [deg]
-        lat -> [float,list of float] Latitude of site in [rad] or [deg]
-        alpha -> [float,list of float] Azimuth of the launch direction in [rad] or [deg]
-        ta -> Astropy Time object
+        lon -> [float,list of float, m=len(lon)] Longitude of site in [rad] or [deg]
+        lat -> [float,list of float, m=len(lat)] Latitude of site in [rad] or [deg]
+        alpha -> [float,list of float, m=len(alpha)] Azimuth of the launch direction in [rad] or [deg]
+        ta -> [array-like of Astropy Time object, n=len(ta)] Time to make transformation
         degrees -> [bool,optional,default=True] If True, the longitude, latitude, and azimuth are assumed to be in degrees
     Outputs:
-        lrf2gcrf_mat,gcrf2lrf_mat -> [tuple] Rotation matrix
+        lrf2gcrf_mat -> [3D array with shape of 1x3x3 or 4D array with shape of mxnx3x3] Rotation matrix from lrf to gcrf
+        gcrf2lrf_mat -> [3D array with shape of 1x3x3 or 4D array with shape of mxnx3x3] Rotation matrix from gcrf to lrf
     """
-    if degrees: 
-        lon,lat,alpha = np.array(lon),np.array(lat),np.array(alpha)  
-    else:
+    if not degrees: 
         lon,lat,alpha = np.rad2deg(lon),np.rad2deg(lat),np.rad2deg(alpha) 
 
     lonlat_array = np.stack([lon,lat]).T
@@ -353,18 +363,17 @@ def lirf_lrf_mat(lon,lat,alpha,ta0,ta,degrees=True):
     Usage:
         >>> lrf2gcrf_mat,gcrf2lrf_mat = lirf_lrf_mat(lon,lat,alpha,ta0,ta)
     Inputs:
-        lon -> [float,list of float] Longitude of site in [rad] or [deg]
-        lat -> [float,list of float] Latitude of site in [rad] or [deg]
-        alpha -> [float,list of float] Azimuth of the lrf direction in [rad] or [deg]
-        ta0 -> Astropy Time object, epoch at which an inertial reference frame defined
-        ta -> Astropy Time object
+        lon -> [float,list of float, m=len(lon)] Longitude of site in [rad] or [deg]
+        lat -> [float,list of float, m=len(lat)] Latitude of site in [rad] or [deg]
+        alpha -> [float,list of float, m=len(alpha)] Azimuth of the lrf direction in [rad] or [deg]
+        ta0 -> [array-like of Astropy Time object, n=len(ta0)] Epoch at which the inertial reference frame defined
+        ta -> [array-like of Astropy Time object, n=len(ta)] Time to make transformation
         degrees -> [bool,optional,default=True] If True, the longitude, latitude, and azimuth are assumed to be in degrees
     Outputs:
-        lirf2lrf_mat,lrf2lirf_mat -> [tuple] Rotation matrix
+        lirf2lrf_mat -> [3D array with shape of 1x3x3 or 4D array with shape of mxnx3x3] Rotation matrix from lirf to lrf
+        lrf2lirf_mat -> [3D array with shape of 1x3x3 or 4D array with shape of mxnx3x3] Rotation matrix from lrf to lirf
     """
-    if degrees: 
-        lon,lat,alpha = np.array(lon),np.array(lat),np.array(alpha)  
-    else:
+    if not degrees: 
         lon,lat,alpha = np.rad2deg(lon),np.rad2deg(lat),np.rad2deg(alpha) 
 
     lirf2gcrf_mat,gcrf2lirf_mat = lrf_gcrf_mat(lon,lat,alpha,ta0)
@@ -387,19 +396,18 @@ def lrf_meme_mat(lon,lat,alpha,ta,degrees=True):
     Rotation matrix between the Launch Reference Frame and the MEME(Mean Equator, Mean Equinox) Reference Frame.
 
     Usage:
-        >>> lrf2meme_mat,meme2lrf = lrf_meme_mat(lon,lat,alpha,ta)
+        >>> lrf2meme_mat,meme2lrf_mat = lrf_meme_mat(lon,lat,alpha,ta)
     Inputs:
-        lon -> [float,list of float] Longitude of site in [rad] or [deg]
-        lat -> [float,list of float] Latitude of site in [rad] or [deg]
-        alpha -> [float,list of float] Azimuth of the lrf direction in [rad] or [deg]
-        ta -> Astropy Time object
+        lon -> [float,list of float, m=len(lon)] Longitude of site in [rad] or [deg]
+        lat -> [float,list of float, m=len(lat)] Latitude of site in [rad] or [deg]
+        alpha -> [float,list of float, m=len(alpha)] Azimuth of the lrf direction in [rad] or [deg]
+        ta -> [array-like of Astropy Time object, n=len(ta)] Time to make transformation
         degrees -> [bool,optional,default=True] If True, the longitude, latitude, and azimuth are assumed to be in degrees
     Outputs:
-        lrf2meme_mat,meme2lrf -> [tuple] Rotation matrix
+        lrf2meme_mat -> [3D array with shape of 1x3x3 or 4D array with shape of mxnx3x3] Rotation matrix from lrf to meme
+        meme2lrf_mat -> [3D array with shape of 1x3x3 or 4D array with shape of mxnx3x3] Rotation matrix from meme to lrf
     """
-    if degrees: 
-        lon,lat,alpha = np.array(lon),np.array(lat),np.array(alpha)  
-    else:
+    if not degrees: 
         lon,lat,alpha = np.rad2deg(lon),np.rad2deg(lat),np.rad2deg(alpha) 
 
     meme2topo_mat,topo2meme_mat = meme_topo_mat(lon,lat,ta)
@@ -425,17 +433,16 @@ def lrf_teme_mat(lon,lat,alpha,ta,degrees=True):
     Usage:
         >>> lrf2teme_mat, teme2lrf_mat = lrf_teme_mat(lon,lat,alpha,ta)
     Inputs:
-        lon -> [float] Longitude of site in [rad] or [deg]
-        lat -> [float] Latitude of site in [rad] or [deg]
-        alpha -> [float] Azimuth of the launch direction in [rad] or [deg]
-        ta -> Astropy Time object
+        lon -> [float,list of float, m=len(lon)] Longitude of site in [rad] or [deg]
+        lat -> [float,list of float, m=len(lat)] Latitude of site in [rad] or [deg]
+        alpha -> [float,list of float, m=len(alpha)] Azimuth of the lrf direction in [rad] or [deg]
+        ta -> [array-like of Astropy Time object, n=len(ta)] Time to make transformation
         degrees -> [bool,optional,default=True] If True, the longitude, latitude, and azimuth are assumed to be in degrees
     Outputs:
-        lrf2teme_mat, teme2lrf_mat -> [tuple] Rotation matrix
+        lrf2teme_mat -> [3D array with shape of 1x3x3 or 4D array with shape of mxnx3x3] Rotation matrix from lrf to teme
+        teme2lrf_mat -> [3D array with shape of 1x3x3 or 4D array with shape of mxnx3x3] Rotation matrix from teme to lrf
     """
-    if degrees: 
-        lon,lat,alpha = np.array(lon),np.array(lat),np.array(alpha)  
-    else:
+    if not degrees: 
         lon,lat,alpha = np.rad2deg(lon),np.rad2deg(lat),np.rad2deg(alpha) 
 
     lrf2gcrf_mat,gcrf2lrf_mat = lrf_gcrf_mat(lon,lat,alpha,ta)
@@ -457,18 +464,17 @@ def ECI_PQW_mat(inc,raan,argp,degrees=True):
     Rotation matrix between the Earth Centred Inertial (ECI) reference frame and the PQW(perifocal) reference frame.
 
     Usage:
-        >>> ECI2PQW_mat,PQW2ECI_mat = ECI_PQW_mat(inc,raan,argp,degrees=True)
+        >>> ECI2PQW_mat,PQW2ECI_mat = ECI_PQW_mat(inc,raan,argp)
     Inputs:
         inc -> [float, list of float] Orbital inclination (i) in [rad] or [deg]
         raan -> [float, list of float] Longitude of the ascending node (Ω) in [rad] or [deg]
         argp -> [float, list of float] Argument of periapsis (ω) in [rad] or [deg]
         degrees -> [bool,optional,default=True] If True, the angles are assumed to be in degrees
     Outputs:
-        ECI2PQW_mat,PQW2ECI_mat -> [tuple] Rotation matrix   
+        ECI2PQW_mat -> [2D array or 3D array with shape of nx3x3] Rotation matrix from ECI to PQW
+        PQW2ECI_mat -> [2D array or 3D array with shape of nx3x3] Rotation matrix from PQW to ECI 
     """
-    if degrees: 
-        inc,raan,argp = np.array(inc),np.array(raan),np.array(argp)  
-    else:
+    if not degrees:
         inc,raan,argp = np.rad2deg(inc),np.rad2deg(raan),np.rad2deg(argp) 
 
     temp_array = np.stack([raan,inc,argp]).T
@@ -494,11 +500,10 @@ def ECI_RSW_mat(inc,raan,argp,nu,degrees=True):
         nu -> [float, list of float] True anomaly (ν) in [rad] or [deg]
         degrees -> [bool,optional,default=True] If True, the angles are assumed to be in degrees
     Outputs:
-        ECI2RSW_mat,RSW2ECI_mat -> [tuple] Rotation matrix 
+        ECI2RSW_mat -> [2D array or 3D array with shape of nx3x3] Rotation matrix from ECI to RSW
+        RSW2ECI_mat -> [2D array or 3D array with shape of nx3x3] Rotation matrix from RSW to ECI
     """
-    if degrees: 
-        inc,raan,argp,nu = np.array(inc),np.array(raan),np.array(argp),np.array(nu)  
-    else:
+    if not degrees:
         inc,raan,argp,nu = np.rad2deg(inc),np.rad2deg(raan),np.rad2deg(argp),np.rad2deg(nu)  
 
     ECI2PQW_mat,PQW2ECI_mat = ECI_PQW_mat(inc,raan,argp)
@@ -516,7 +521,7 @@ def ECI_NTW_mat(ecc,inc,raan,argp,nu,degrees=True):
     Rotation matrix between the Earth Centred Inertial (ECI) reference frame and the NTW(x:Normal,y:Tangent,z:Cross-track) reference frame.
 
     Usage:
-        >>> ECI2NTW_mat,NTW2ECI_mat = ECI_RSW_mat(inc,raan,argp,nu)
+        >>> ECI2NTW_mat,NTW2ECI_mat = ECI_NTW_mat(inc,raan,argp,nu)
     Inputs:
         ecc -> [float, list of float] Orbital eccentricity (e)
         inc -> [float, list of float] Orbital inclination (i)  in [rad] or [deg]
@@ -525,11 +530,10 @@ def ECI_NTW_mat(ecc,inc,raan,argp,nu,degrees=True):
         nu -> [float, list of float] True anomaly (ν) in [rad] or [deg]
         degrees -> [bool,optional,default=True] If True, the angles are assumed to be in degrees
     Outputs:
-        ECI2NTW_mat,NTW2ECI_mat -> [tuple] Rotation matrix 
+        ECI2NTW_mat -> [2D array or 3D array with shape of nx3x3] Rotation matrix from ECI to NTW
+        NTW2ECI_mat -> [2D array or 3D array with shape of nx3x3] Rotation matrix from NTW to ECI
     """
-    if degrees: 
-        inc,raan,argp,nu = np.array(inc),np.array(raan),np.array(argp),np.array(nu)  
-    else:
+    if not degrees: 
         inc,raan,argp,nu = np.rad2deg(inc),np.rad2deg(raan),np.rad2deg(argp),np.rad2deg(nu)  
 
     # Claculate Flight Path Angle
@@ -558,11 +562,10 @@ def ECI_RADAR_mat(inc,raan,argp,nu,degrees=True):
         nu -> [float, list of float] True anomaly (ν) in [rad] or [deg]
         degrees -> [bool,optional,default=True] If True, the angles are assumed to be in degrees
     Outputs:
-        ECI2RADAR_mat,RADAR2ECI_mat -> [tuple] Rotation matrix 
+        ECI2RADAR_mat -> [2D array or 3D array with shape of nx3x3] Rotation matrix from ECI to RADAR
+        RADAR2ECI_mat -> [2D array or 3D array with shape of nx3x3] Rotation matrix from RADAR to ECI
     """
-    if degrees: 
-        inc,raan,argp,nu = np.array(inc),np.array(raan),np.array(argp),np.array(nu)  
-    else:
+    if not degrees:
         inc,raan,argp,nu = np.rad2deg(inc),np.rad2deg(raan),np.rad2deg(argp),np.rad2deg(nu)  
 
     ECI2RSW_mat,RSW2ECI_mat = ECI_RSW_mat(inc,raan,argp,nu)
@@ -582,15 +585,16 @@ def RSW_BF_mat(triad,mode,degrees=True):
     Usage:
         >>> RSW2BF_mat,BF2RSW_mat = RSW_BF_mat(triad,mode)
     Inputs:
-        triad -> [list of float] Three angles in [rad] or [deg] for mode of 'euler' and 'ypr';
-              -> [2D array] Install matrix for mode of 'matrix' and 'quaternion'
+        triad -> [1D/2D array of float] Three angles in [rad] or [deg] for mode of 'euler', 'ypr' and 'quaternion'
+              -> [2D/3D array of float] Install matrix for mode of 'matrix'
         mode -> [str] if 'euler', the classic euler 'ZXZ' rotation transform from RSW to BF is applied
-                      if 'ypr', the yaw–pitch–roll rotation transform from RSW to BF is applied
+                      if 'ypr', the Yaw(x)–Pitch(z)–Roll(y) rotation transform from RSW to BF is applied
                       if 'matrix', Each column of matrix is the base vector of BF in RSW
                       if 'quaternion', Each row is a (possibly non-unit norm) quaternion in scalar-last (x, y, z, w) format. The quaternion is applied from RSW to BF
         degrees -> [bool,optional,default=True] If True, the angles are assumed to be in degrees              
     Outputs:
-        RSW2BF_mat,BF2RSW_mat -> [tuple] Rotation matrix     
+        RSW2BF_mat -> [2D array or 3D array with shape of nx3x3] Rotation matrix from RSW to BF
+        BF2RSW_mat -> [2D array or 3D array with shape of nx3x3] Rotation matrix from BF to RSW 
     """
     triad = np.array(triad)
         
@@ -604,18 +608,20 @@ def RSW_BF_mat(triad,mode,degrees=True):
     elif mode == 'ypr':
         RSW2BF_mat = Rot('XZY',triad)
     elif mode == 'matrix':
-        if triad.ndim == 2:
+        triad_ndim = triad.ndim
+        if triad_ndim == 2:
             RSW2BF_mat = triad.T
-        else:
+        elif triad_ndim == 3:
             RSW2BF_mat = triad.transpose(0,2,1) 
     elif mode == 'quaternion':  
         RSW2BF_mat = Rotation.from_quat(triad).as_matrix()     
     else:
         raise Exception("'mode' must be in ['euler','ypr','matrix','quatern']")     
 
-    if RSW2BF_mat.ndim == 2:    
+    RSW2BF_mat_ndim = RSW2BF_mat.ndim
+    if RSW2BF_mat_ndim == 2:    
         BF2RSW_mat = RSW2BF_mat.T   
-    else:
+    elif RSW2BF_mat_ndim == 3:
         BF2RSW_mat = RSW2BF_mat.transpose(0,2,1)  
              
     return RSW2BF_mat,BF2RSW_mat 
@@ -627,38 +633,18 @@ def BF_DF_mat(triad,mode,degrees=True):
     Usage:
         >>> BF2DF_mat,DF2BF_mat = BF_DF_mat(triad,mode)
     Inputs:
-        triad -> [list of float] Three angles in [rad] or [deg] for mode of 'euler'
-              -> [2D array] Install matrix for mode of 'matrix' and 'quaternion'
+        triad -> [1D/2D array of float] Three angles in [rad] or [deg] for mode of 'euler', 'ypr' and 'quaternion'
+              -> [2D/3D array of float] Install matrix for mode of 'matrix' 
         mode -> [str] if 'euler', the classic euler 'ZXZ' rotation transform from BF to DF is applied
+                      if 'ypr', the Yaw(x)–Pitch(z)–Roll(y) rotation transform from BF to DF is applied
                       if 'matrix', the install matrix of device, Each column of matrix is the base vector of DF in BF
                       if 'quaternion', Each row is a (possibly non-unit norm) quaternion in scalar-last (x, y, z, w) format. The quaternion is applied from BF to DF
         degrees -> [bool,optional,default=True] If True, angles are assumed to be in degrees  
     Outputs:
-        BF2DF_mat,DF2BF_mat -> [2d array] Rotation matrix   
+        BF2DF_mat -> [2D array or 3D array with shape of nx3x3] Rotation matrix from BF to DF
+        DF2BF_mat -> [2D array or 3D array with shape of nx3x3] Rotation matrix from DF to BF
     """
-    triad = np.array(triad)
-        
-    if not degrees:
-        if mode in ['euler','ypr']:
-            triad = np.rad2deg(triad)
-
-    if mode == 'euler':
-        # alpha,beta,gamma = triad
-        BF2DF_mat = Rot('ZXZ',triad)
-    elif mode == 'matrix':
-        if triad.ndim == 2:
-            BF2DF_mat = triad.T
-        else:
-            BF2DF_mat = triad.transpose(0,2,1) 
-    elif mode == 'quaternion':  
-        BF2DF_mat = Rotation.from_quat(triad).as_matrix() 
-    else:
-        raise Exception("'mode' must be in ['euler','matrix','quatern']")            
-
-    if BF2DF_mat.ndim == 2:    
-        DF2BF_mat = BF2DF_mat.T   
-    else:
-        DF2BF_mat = BF2DF_mat.transpose(0,2,1)  
+    BF2DF_mat,DF2BF_mat = RSW_BF_mat(triad,mode,degrees)
              
     return BF2DF_mat,DF2BF_mat 
 
@@ -669,26 +655,22 @@ def ECI_DF_mat(triad_RSWBF,mode_RSWBF,triad_BFDF,mode_BFDF,orb_ele,degrees=True)
     Usage:
         >>> ECI2DF_mat,DF2ECI_mat = ECI_DF_mat(triad_RSWBF,mode_RSWBF,triad_BFDF,mode_BFDF,orb_ele)
     Inputs:
-        triad_RSWBF -> [list of float] Three angles in [rad] or [deg] for mode of 'euler' and 'ypr'
-                    -> [2D array] Install matrix for mode of 'matrix' and 'quaternion'
-        mode_RSWBF -> [str] if 'euler', the classic euler 'ZXZ' rotation transform from RSW to BF is applied
-                      if 'ypr', the yaw–pitch–roll rotation transform from RSW to BF is applied
-                      if 'matrix', the install matrix of device, Each column of matrix is the base vector of BF in RSW
-                      if 'quaternion', Each row is a (possibly non-unit norm) quaternion in scalar-last (x, y, z, w) format. The quaternion is applied from RSW to BF
-        triad_BFDF -> [list of float] Three angles in [rad] or [deg] for mode of 'euler'
-                   -> [2D array] Install matrix for mode of 'matrix' and 'quaternion'
-        mode_BFDF -> [str] if 'euler', the classic euler 'ZXZ' rotation transform from BF to DF is applied
-                      if 'matrix', the install matrix of device, Each column of matrix is the base vector of DF in BF
-                      if 'quaternion', Each row is a (possibly non-unit norm) quaternion in scalar-last (x, y, z, w) format. The quaternion is applied from BF to DF           
-        orb_ele ->  Orbit elements in form of [a,ecc,inc,raan,argp,nu], where inc, raan, argp, and nu are in [rad] or [deg]
+        triad_RSWBF/triad_BFDF -> [1D/2D array of float] Three angles in [rad] or [deg] for mode of 'euler', 'ypr' and 'quaternion'
+                               -> [2D/3D array of float] Install matrix for mode of 'matrix' 
+        mode_RSWBF/mode_BFDF -> [str] if 'euler', the classic euler 'ZXZ' rotation transform from RSW to BF or from BF to DF is applied
+                      if 'ypr', the yaw–pitch–roll rotation transform from RSW to BF or from BF to DF is applied
+                      if 'matrix', each column of matrix is the base vector of BF in RSW or DF in BF
+                      if 'quaternion', each row is a (possibly non-unit norm) quaternion in scalar-last (x, y, z, w) format. The quaternion is applied from RSW to BF or from BF to DF
+        orb_ele ->  [1D/2D array with shape of nx6] Orbit elements in form of [a,ecc,inc,raan,argp,nu], where inc, raan, argp, and nu are in [rad] or [deg]
         degrees -> [bool,optional,default=True] If True, angles are assumed to be in degrees 
     Outputs:
-        ECI2DF_mat,DF2ECI_mat -> [tuple of 3D array] time series of rotation matrix between ECI and DF, which shape is (100,3,3)   
+        ECI2DF_mat -> [4D array with shape of nx3x3] Rotation matrix from ECI to DF with shape of mxnx3x3
+        DF2ECI_mat -> [4D array with shape of nx3x3] Rotation matrix from DF to ECI with shape of mxnx3x3 
     """
     triad_RSWBF = np.array(triad_RSWBF)
     triad_BFDF = np.array(triad_BFDF)
     orb_ele = np.array(orb_ele)
-    inc,raan,argp,nu = orb_ele[:,2:].T
+    inc,raan,argp,nu = orb_ele.T[2:]
         
     if not degrees:
         if mode_RSWBF in ['euler','ypr']:
@@ -696,18 +678,19 @@ def ECI_DF_mat(triad_RSWBF,mode_RSWBF,triad_BFDF,mode_BFDF,orb_ele,degrees=True)
         if mode_BFDF == 'euler':
             triad_BFDF = np.rad2deg(triad_BFDF)
 
-        inc,raan,argp,nu = np.rad2deg(orb_ele[:,2:]).T
+        inc,raan,argp,nu = np.rad2deg(orb_ele).T[2:]
 
-    ECI2RSW_mat,RSW2ECI_mat = ECI_RSW_mat(inc,raan,argp,nu)
-    RSW2BF_mat,BF2RSW_mat = RSW_BF_mat(triad_RSWBF,mode_RSWBF)
-    BF2DF_mat, DF2BF_mat = BF_DF_mat(triad_BFDF,mode_BFDF) # should be 2*3*3
+    ECI2RSW_mat,RSW2ECI_mat = ECI_RSW_mat(inc,raan,argp,nu) # nx3x3
+    RSW2BF_mat,BF2RSW_mat = RSW_BF_mat(triad_RSWBF,mode_RSWBF) # nx3x3
+    BF2DF_mat, DF2BF_mat = BF_DF_mat(triad_BFDF,mode_BFDF) # mx3x3
 
-    ndim = BF2DF_mat.ndim
-    if ndim == 2: BF2DF_mat = np.array([BF2DF_mat])
+    BF2DF_mat_ndim = BF2DF_mat.ndim
+    RSW2BF_mat_ndim = RSW2BF_mat.ndim
 
-    if RSW2BF_mat.ndim == 2:
+    if BF2DF_mat_ndim == 2: BF2DF_mat = np.array([BF2DF_mat]) # 1x3x3
+    if RSW2BF_mat_ndim == 2:
         ECI2DF_mat = (BF2DF_mat @ RSW2BF_mat)[:,None] @ ECI2RSW_mat
-    else:
+    elif RSW2BF_mat_ndim == 3:
         ECI2DF_mat = (BF2DF_mat[:,None] @ RSW2BF_mat) @ ECI2RSW_mat  
 
     DF2ECI_mat = ECI2DF_mat.transpose(0,1,3,2) 

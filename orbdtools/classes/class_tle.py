@@ -185,7 +185,7 @@ class TLE(object):
 
         return TLE(self._sats_Satrec,self._sats_EarthSatellite,info)    
             
-    def predict(self,t,sats_index=None):
+    def predict(self,t,sats_id=None):
         """
         Calculate the cartesian coordinates of space objects in GCRF(Geocentric Celetial Reference Frame) over a period of time.
 
@@ -196,16 +196,17 @@ class TLE(object):
             >>> xyz_gcrf = tle.predict(t_list)
         Inputs:
             t -> [str or list of str] time to perform a orbital propagation
-            sats_index -> [list of int] Index of space objects  
+            sats_id -> [list of int] NORAD IDs of space objects  
         Outputs:
             xyz_gcrf -> [3D array] Cartesian coordinates of space objects in GCRF    
         """
         ta = Time(t)
 
-        if sats_index is None:
+        if sats_id is None:
             sats = self._sats_Satrec
         else:
-            sats = np.array(self._sats_Satrec)[sats_index]
+            in_flag = self.df['noradid'].isin(sats_id)
+            sats = np.array(self._sats_Satrec)[in_flag]
 
         sats_array = SatrecArray(sats)  
 
@@ -219,7 +220,7 @@ class TLE(object):
 
         return xyz_gcrf   
 
-    def download(noradids,mode='keep',dir_TLE='TLE/' ):
+    def download(noradids,mode='keep',dir_TLE='TLE/'):
         """
         Download TLE files from [SPACETRACK](https://www.space-track.org)
 
