@@ -87,7 +87,7 @@ Convert to True Anomaly from Mean anomaly.
 >>> # 120.18911304875806
 ```
 
-#### Transformation between non-singular orbital elements and classical orbital elements for elliptic trajectories
+#### Transformation between non-singular orbital elements and classical orbital elements for elliptic orbits
 
 Convert to non-singular orbital elements from classical orbital elements.
 
@@ -179,7 +179,7 @@ Transform state vector between two reference frames.
 >>> # [ 4.45943241e+03 -2.81665205e+03 -4.69355448e+03  1.24694023e+00 6.80654150e+00 -2.84323163e+00]
 ```
 
-### Computation of matrix associated to transformation among a variety of reference frames
+### Computation of transformation matrix among a variety of reference frames
 
 #### Calculate transformation matrix between Topocentric NEU(North East Up) and  ITRF(International Terrestrial Reference Frame).
 
@@ -443,7 +443,7 @@ Three types of matching results are summaried as follows
 | 0          | None              | No solution        | Failure | increase threshold |
 | -1         | list of NORAD IDs | Multiple solutions | Failure | decrease threshold |
 
-#### For space-based radar range+angle measurements
+#### For radar range+angle measurements
 
 Load the observation file and extract the space-based radar measurement data. 
 
@@ -476,13 +476,13 @@ Match the arc to space objects with TLE file. Note: the RADAR reference frame is
     1616
     Target ID: 1616
 
-### Implementation of some classic Initial Orbit Determination methods
+### Implementation of some classic Initial Orbit Determination(IOD) methods
 
 For optical angle-only measurement data, the methods of **Near-Circular Orbit Hypothesis**, **Gauss**, **Laplace**, **Multiple-points Laplace**, **Double-R**, **Gooding**, and **FG-Series** are provided for determining the initial orbit of space objects in this package. For radar range+angle measurement data, the methods of **Gibbs/Herrick-Gibbs** and **Elliptical Orbit Fitting** are provided for determining the initial orbit of space objects in this package.
 
-Here we use ground-based optical angle-only  measurements, space-based optical angle-only measurements and radar range+angle measurements as examples to test various  IOD methods and compare them with real orbits from TLE.
+Here we use ground-based optical angle-only  measurements, space-based optical angle-only measurements and radar range+angle measurements as examples to test various  IOD methods and compare them with the true orbits from TLE.
 
-Extract the necessary information for Initial Orbit Determination(IOD) from **ground-based optical angle-only** measurements.
+Extract the necessary information for IOD from **ground-based optical angle-only** measurements.
 
 ```python
 >>> import numpy as np
@@ -618,7 +618,7 @@ For more information about the method, please refer to
 >>> # 0  2022-01-18T21:31:36.000  1.31294  0.00191  52.036942  51.554157  149.873847  344.616532  344.674512  1.145834  success
 ```
 
-Compare the results with real orbits from TLE.
+Compare the results with the true orbits from TLE.
 
 ```python
 >>> from orbdtools import TLE
@@ -695,6 +695,8 @@ For the **space-based optical angle-only** measurements, we use the same process
 >>> # 203    22694  6.611253  0.000843  14.627818  7.031644  295.619471  250.970436  2.571235    0.0  2022-03-24T19:43:11.000Z
 ```
 
+
+
 For the **space-based radar range+angle** measurements, we use the methods of **Gibbs/Herrick-Gibbs** and **Elliptical Orbit Fitting** to determine the initial orbit of space objects.
 
 Extract the necessary information for Initial Orbit Determination(IOD) from **space-based radar range+angle** measurements.
@@ -750,7 +752,7 @@ For more information about the method, please refer to
 >>> # 0  2022-05-24T08:38:34.000  1.191645  0.106694  144.1329  292.686922  269.482702  179.250624  179.076922  1.085394  success
 ```
 
-Compare the results with real orbits from TLE.
+Compare the results with the true orbits from TLE.
 
 ```python
 >>> from orbdtools import TLE
