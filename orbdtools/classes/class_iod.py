@@ -135,7 +135,8 @@ class IOD(object):
         ele_df = to_ele_dict_radar(mu_nd,t0_1,t_1_nd,ele,posnp_nd,degrees)
 
         if ellipse_only:
-            valid_flag = (ele_df['a'] > self.Re_nd) & (ele_df['status'] == 'success')
+            perigee = ele_df['a']*(1-ele_df['ecc'])
+            valid_flag = (perigee > self.Re_nd) & (ele_df['status'] == 'success')
             ele_df = ele_df[valid_flag]
 
         self.df = ele_df    
@@ -199,7 +200,8 @@ class IOD(object):
         ele_df = to_ele_dict_radar(mu_nd,t0_1,t_1_nd,ele,posnp_nd,degrees)
 
         if ellipse_only:
-            valid_flag = (ele_df['a'] > self.Re_nd) & (ele_df['status'] == 'success')
+            perigee = ele_df['a']*(1-ele_df['ecc'])
+            valid_flag = (perigee > self.Re_nd) & (ele_df['status'] == 'success')
             ele_df = ele_df[valid_flag]
 
         self.df = ele_df    
@@ -270,7 +272,8 @@ class IOD(object):
         ele_df = to_ele_dict_optical(mu_nd,t0_1,t_1_nd,[ele],losnp,xyz_sitenp_nd,degrees)
 
         if ellipse_only:
-            valid_flag = (ele_df['a'] > self.Re_nd) & (ele_df['status'] == 'success')
+            perigee = ele_df['a']*(1-ele_df['ecc'])
+            valid_flag = (perigee > self.Re_nd) & (ele_df['status'] == 'success')
             ele_df = ele_df[valid_flag]
 
         self.df = ele_df    
@@ -341,7 +344,8 @@ class IOD(object):
         ele_df = to_ele_dict_optical(mu_nd,t0_1,t_1_nd,eles,losnp,xyz_sitenp_nd,degrees)
 
         if ellipse_only:
-            valid_flag = (ele_df['a'] > self.Re_nd) & (ele_df['status'] == 'success')
+            perigee = ele_df['a']*(1-ele_df['ecc'])
+            valid_flag = (perigee > self.Re_nd) & (ele_df['status'] == 'success')
             ele_df = ele_df[valid_flag]
 
         self.df = ele_df
@@ -413,7 +417,8 @@ class IOD(object):
         ele_df = to_ele_dict_optical(mu_nd,t0_1,t_1_nd,eles,losnp,xyz_sitenp_nd,degrees)
 
         if ellipse_only:
-            valid_flag = (ele_df['a'] > self.Re_nd) & (ele_df['status'] == 'success')
+            perigee = ele_df['a']*(1-ele_df['ecc'])
+            valid_flag = (perigee > self.Re_nd) & (ele_df['status'] == 'success')
             ele_df = ele_df[valid_flag]
 
         self.df = ele_df
@@ -479,7 +484,8 @@ class IOD(object):
         ele_df = to_ele_dict_optical(mu_nd,t0_2,t_2_nd,eles,losnp,xyz_sitenp_nd,degrees)
 
         if ellipse_only:
-            valid_flag = (ele_df['a'] > self.Re_nd) & (ele_df['status'] == 'success')
+            perigee = ele_df['a']*(1-ele_df['ecc'])
+            valid_flag = (perigee > self.Re_nd) & (ele_df['status'] == 'success')
             ele_df = ele_df[valid_flag]
 
         self.df = ele_df
@@ -550,7 +556,8 @@ class IOD(object):
         ele_df = to_ele_dict_optical(mu_nd,t0_1,t_1_nd,[ele],losnp,xyz_sitenp_nd,degrees)
 
         if ellipse_only:
-            valid_flag = (ele_df['a'] > self.Re_nd) & (ele_df['status'] == 'success')
+            perigee = ele_df['a']*(1-ele_df['ecc'])
+            valid_flag = (perigee > self.Re_nd) & (ele_df['status'] == 'success')
             ele_df = ele_df[valid_flag]
 
         self.df = ele_df
@@ -625,7 +632,8 @@ class IOD(object):
         ele_df = to_ele_dict_optical(mu_nd,t0_1,t_1_nd,[ele],losnp,xyz_sitenp_nd,degrees)
 
         if ellipse_only:
-            valid_flag = (ele_df['a'] > self.Re_nd) & (ele_df['status'] == 'success')
+            perigee = ele_df['a']*(1-ele_df['ecc'])
+            valid_flag = (perigee > self.Re_nd) & (ele_df['status'] == 'success')
             ele_df = ele_df[valid_flag]
 
         self.df = ele_df
@@ -693,7 +701,8 @@ class IOD(object):
             ele_df = to_ele_dict_optical(mu_nd,t0_2,t_2_nd,[ele],losnp,xyz_sitenp_nd,degrees)
 
         if ellipse_only:
-            valid_flag = (ele_df['a'] > self.Re_nd) & (ele_df['status'] == 'success')
+            perigee = ele_df['a']*(1-ele_df['ecc'])
+            valid_flag = (perigee > self.Re_nd) & (ele_df['status'] == 'success')
             ele_df = ele_df[valid_flag]
 
         self.df = ele_df

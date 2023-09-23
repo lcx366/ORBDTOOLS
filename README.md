@@ -61,124 +61,6 @@ Revert  to classical orbital elements from state vectors.
 >>> print(coe_nd)
 ```
 
-### Transformation among Classical Orbital Elements
-
-Convert to True Anomaly from Mean anomaly.
-
-```python
->>> from orbdtools import OrbeleTrans
->>> # For elliptic trajectories
->>> Me = 100 # Mean anomaly in [deg]
->>> ecc = 0.1 # Eccentricity
->>> nu = OrbeleTrans.Me_to_nu(Me,ecc)
->>> print(nu)
->>> #For hyperbolic trajectories
->>> Mh = 100 # Mean anomaly in [deg]
->>> ecc = 1.1 # Eccentricity
->>> nu = OrbeleTrans.Mh_to_nu(Mh,ecc)
->>> print(nu)
->>> # For parabolic trajectories
->>> Mp = 100 # Mean anomaly in [deg]
->>> ecc = 1 # Eccentricity
->>> nu = OrbeleTrans.Mp_to_nu(Mp,ecc)
->>> print(nu)
->>> # 110.97777806171158
->>> # 147.3000454161361
->>> # 120.18911304875806
-```
-
-#### Transformation between non-singular orbital elements and classical orbital elements for elliptic orbits
-
-Convert to non-singular orbital elements from classical orbital elements.
-
-The non-singular orbital elements exhibit no singularity of ω for near-circular orbit. It is also known as the first kind of non-singular orbital elements.
-
-```python
->>> a,ecc,inc,raan,argp,nu = 1.2,0.1,50,60,70,80
->>> a,inc,raan,xi,eta,l = OrbeleTrans.coe2nse(a,ecc,inc,raan,argp,nu)
->>> print(a,inc,raan,xi,eta,l)
->>> # 1.2 50 60 0.03420201433256689 0.09396926207859084 138.87814991243528
-```
-
-Revert to classical orbital elements from non-singular orbital elements.
-
-```python
->>> a,inc,raan,xi,eta,l = 1.2,50,60,0.0342,0.0940,138.8781
->>> a,ecc,inc,raan,argp,nu = OrbeleTrans.nse2coe(a,inc,raan,xi,eta,l)
->>> print(a,ecc,inc,raan,argp,nu)
->>> # 1.2 0.1000281960249209 50 60 70.00710602013012 79.99572274415195
-```
-
-Convert to modified equinoctial orbital elements from classical orbital elements.
-
-The modified equinoctial orbital elements exhibit no singularity of both ω and Ω for near-circular orbit with orbital plane close to equator. It is also known as the second kind of non-singular orbital elements.
-
-```python
->>> a,ecc,inc,raan,argp,nu = 1.2,0.1,0.01,60,70,80
->>> p,f,g,h,k,L = OrbeleTrans.coe2mee(a,ecc,inc,raan,argp,nu)
->>> print(p,f,g,h,k,L)
->>> # 1.188 -0.06427876096865393 0.07660444431189782 4.363323141062026e-05 7.557497370160451e-05 198.87814991243528
-```
-
-Revert to classical orbital elements from modified equinoctial orbital elements.
-
-```python
->>> p,f,g,h,k,L = 1.188,-0.0643,0.0766,4.3633e-05,7.5575e-05,198.8781
->>> a,ecc,inc,raan,argp,nu = OrbeleTrans.mee2coe(p,f,g,h,k,L)
->>> print(a,ecc,inc,raan,argp,nu)
->>> # 1.2000024848536301 0.10001024947474133 0.00999998935100991 60.00014021318978 70.0108175075162 79.98961193079703
-```
-
-#### Transformation between mean orbital elements and osculating orbital elements associated to SGP4/SDP4 propagator
-
-Convert mean orbital elements to osculating orbital elements.
-
-```python
->>> from orbdtools import OrbeleTrans
->>> from astropy.time import Time
->>> mean_ele = [7000,0.01,50,100,30,210] # in form of [a, e, i, Ω, ω, v] in TEME
->>> epoch = Time('2022-06-07T08:09:12.345')
->>> oscu_ele = OrbeleTrans.mean2osculating(mean_ele,epoch)
->>> print(oscu_ele)
->>> # [6.99736629e+03 1.06734477e-02 4.99907889e+01 1.00021727e+02 3.31317206e+01 2.06884978e+02]
-```
-
-Revert to mean orbital elements from osculating orbital elements.
-
-```python
->>> from astropy.time import Time
->>> oscu_ele = [6.9974e+03,1.0673e-02,4.9991e+01,1.0002e+02,3.3132e+01,2.0688e+02] # in form of [a, e, i, Ω, ω, v] in TEME
->>> epoch = Time('2022-06-07T08:09:12.345')
->>> mean_ele = OrbeleTrans.osculating2mean(oscu_ele,epoch)
->>> print(mean_ele)
->>> # [7.00003366e+03 9.99954249e-03 5.00002077e+01 9.99982732e+01 3.00004171e+01 2.09994881e+02]
-```
-
-#### Transformation of classical orbital elements or state vectors between two reference frames
-
-Transform classical orbital elements between two reference frames, especially between 'TEME' and 'GCRF'. What needs extra attention is that the reference frames on transformation must be defined as hand-right.
-
-```python
->>> from orbdtools import OrbeleTrans
->>> from orbdtools import FrameTrans
->>> coe_from = [6.9974e+03,1.0673e-02,4.9991e+01,1.0002e+02,3.3132e+01,2.0688e+02] # in TEME
->>> trans_matrix = FrameTrans.gcrf_teme_mat(epoch)
->>> teme2gcrf_mat = trans_matrix.teme2gcrf_mat # transformation matrix from TEME to GCRF
->>> coe_to = OrbeleTrans.coe_trans(teme2gcrf_mat,coe_from)
->>> print(coe_to)
->>> # [6.99740000e+03 1.06730000e-02 5.01127908e+01 9.97161144e+01 3.31576626e+01 2.06880000e+02]
-```
-
-Transform state vector between two reference frames.
-
-```python
->>> from orbdtools import OrbeleTrans
->>> rv_from = [4.4836e+03,-2.7941e+03,-4.6840e+03,1.2189,6.8128,-2.8404] # in unit of [km,km/s] in TEME
->>> rv_to = OrbeleTrans.rv_trans(teme2gcrf_mat,rv_from)
->>> print(rv_to)
->>> # [ 4.45943241e+03 -2.81665205e+03 -4.69355448e+03  1.24694023e+00 6.80654150e+00 -2.84323163e+00]
-```
-
 ### Computation of transformation matrix among a variety of reference frames
 
 #### Calculate transformation matrix between Topocentric NEU(North East Up) and  ITRF(International Terrestrial Reference Frame).
@@ -335,6 +217,124 @@ The transformation between the Body-Fixed(BF) reference frame and the Device-Fix
 
 The transformation of vectors from one reference frame to another can be calculated using `Matrix_dot_Vector` in `orbdtools.utils.math`.
 
+### Transformation among Classical Orbital Elements
+
+Convert to True Anomaly from Mean anomaly.
+
+```python
+>>> from orbdtools import OrbeleTrans
+>>> # For elliptic trajectories
+>>> Me = 100 # Mean anomaly in [deg]
+>>> ecc = 0.1 # Eccentricity
+>>> nu = OrbeleTrans.Me_to_nu(Me,ecc)
+>>> print(nu)
+>>> #For hyperbolic trajectories
+>>> Mh = 100 # Mean anomaly in [deg]
+>>> ecc = 1.1 # Eccentricity
+>>> nu = OrbeleTrans.Mh_to_nu(Mh,ecc)
+>>> print(nu)
+>>> # For parabolic trajectories
+>>> Mp = 100 # Mean anomaly in [deg]
+>>> ecc = 1 # Eccentricity
+>>> nu = OrbeleTrans.Mp_to_nu(Mp,ecc)
+>>> print(nu)
+>>> # 110.97777806171158
+>>> # 147.3000454161361
+>>> # 120.18911304875806
+```
+
+#### Transformation between non-singular orbital elements and classical orbital elements for elliptic orbits
+
+Convert to non-singular orbital elements from classical orbital elements.
+
+The non-singular orbital elements exhibit no singularity of ω for near-circular orbit. It is also known as the first kind of non-singular orbital elements.
+
+```python
+>>> a,ecc,inc,raan,argp,nu = 1.2,0.1,50,60,70,80
+>>> a,inc,raan,xi,eta,l = OrbeleTrans.coe2nse(a,ecc,inc,raan,argp,nu)
+>>> print(a,inc,raan,xi,eta,l)
+>>> # 1.2 50 60 0.03420201433256689 0.09396926207859084 138.87814991243528
+```
+
+Revert to classical orbital elements from non-singular orbital elements.
+
+```python
+>>> a,inc,raan,xi,eta,l = 1.2,50,60,0.0342,0.0940,138.8781
+>>> a,ecc,inc,raan,argp,nu = OrbeleTrans.nse2coe(a,inc,raan,xi,eta,l)
+>>> print(a,ecc,inc,raan,argp,nu)
+>>> # 1.2 0.1000281960249209 50 60 70.00710602013012 79.99572274415195
+```
+
+Convert to modified equinoctial orbital elements from classical orbital elements.
+
+The modified equinoctial orbital elements exhibit no singularity of both ω and Ω for near-circular orbit with orbital plane close to equator. It is also known as the second kind of non-singular orbital elements.
+
+```python
+>>> a,ecc,inc,raan,argp,nu = 1.2,0.1,0.01,60,70,80
+>>> p,f,g,h,k,L = OrbeleTrans.coe2mee(a,ecc,inc,raan,argp,nu)
+>>> print(p,f,g,h,k,L)
+>>> # 1.188 -0.06427876096865393 0.07660444431189782 4.363323141062026e-05 7.557497370160451e-05 198.87814991243528
+```
+
+Revert to classical orbital elements from modified equinoctial orbital elements.
+
+```python
+>>> p,f,g,h,k,L = 1.188,-0.0643,0.0766,4.3633e-05,7.5575e-05,198.8781
+>>> a,ecc,inc,raan,argp,nu = OrbeleTrans.mee2coe(p,f,g,h,k,L)
+>>> print(a,ecc,inc,raan,argp,nu)
+>>> # 1.2000024848536301 0.10001024947474133 0.00999998935100991 60.00014021318978 70.0108175075162 79.98961193079703
+```
+
+#### Transformation between mean orbital elements and osculating orbital elements associated to SGP4/SDP4 propagator
+
+Convert mean orbital elements to osculating orbital elements.
+
+```python
+>>> from orbdtools import OrbeleTrans
+>>> from astropy.time import Time
+>>> mean_ele = [7000,0.01,50,100,30,210] # in form of [a, e, i, Ω, ω, v] in TEME
+>>> epoch = Time('2022-06-07T08:09:12.345')
+>>> oscu_ele = OrbeleTrans.mean2osculating(mean_ele,epoch)
+>>> print(oscu_ele)
+>>> # [6.99736629e+03 1.06734477e-02 4.99907889e+01 1.00021727e+02 3.31317206e+01 2.06884978e+02]
+```
+
+Revert to mean orbital elements from osculating orbital elements.
+
+```python
+>>> from astropy.time import Time
+>>> oscu_ele = [6.9974e+03,1.0673e-02,4.9991e+01,1.0002e+02,3.3132e+01,2.0688e+02] # in form of [a, e, i, Ω, ω, v] in TEME
+>>> epoch = Time('2022-06-07T08:09:12.345')
+>>> mean_ele = OrbeleTrans.osculating2mean(oscu_ele,epoch)
+>>> print(mean_ele)
+>>> # [7.00003366e+03 9.99954249e-03 5.00002077e+01 9.99982732e+01 3.00004171e+01 2.09994881e+02]
+```
+
+#### Transformation of classical orbital elements or state vectors between two reference frames
+
+Transform classical orbital elements between two reference frames, especially between 'TEME' and 'GCRF'. What needs extra attention is that the reference frames on transformation must be defined as hand-right.
+
+```python
+>>> from orbdtools import OrbeleTrans
+>>> from orbdtools import FrameTrans
+>>> coe_from = [6.9974e+03,1.0673e-02,4.9991e+01,1.0002e+02,3.3132e+01,2.0688e+02] # in TEME
+>>> trans_matrix = FrameTrans.gcrf_teme_mat(epoch)
+>>> teme2gcrf_mat = trans_matrix.teme2gcrf_mat # transformation matrix from TEME to GCRF
+>>> coe_to = OrbeleTrans.coe_trans(teme2gcrf_mat,coe_from)
+>>> print(coe_to)
+>>> # [6.99740000e+03 1.06730000e-02 5.01127908e+01 9.97161144e+01 3.31576626e+01 2.06880000e+02]
+```
+
+Transform state vector between two reference frames.
+
+```python
+>>> from orbdtools import OrbeleTrans
+>>> rv_from = [4.4836e+03,-2.7941e+03,-4.6840e+03,1.2189,6.8128,-2.8404] # in unit of [km,km/s] in TEME
+>>> rv_to = OrbeleTrans.rv_trans(teme2gcrf_mat,rv_from)
+>>> print(rv_to)
+>>> # [ 4.45943241e+03 -2.81665205e+03 -4.69355448e+03  1.24694023e+00 6.80654150e+00 -2.84323163e+00]
+```
+
 ### Data processing related to TLE files
 
 #### Download TLE files from [SPACETRACK](https://www.space-track.org)
@@ -364,9 +364,8 @@ A sample of  the *satno.txt* file is as follows:
 >>> # tle = TLE.from_file(tle_file) # All TLEs are considered
 >>> print(tle.range_epoch) # Epoch coverage for TLE files in format of [min, median, max]
 >>> print(tle.df)
+>>> # ['2022-05-18T23:07:15.444Z', '2022-05-23T22:00:02.000Z', '2022-05-24T06:32:39.874Z']
 ```
-
-    ['2022-05-18T23:07:15.444Z', '2022-05-23T22:00:02.000Z', '2022-05-24T06:32:39.874Z']
 
 <p align="middle">
   <img src="readme_figs/df.png" width="700" />
@@ -397,9 +396,8 @@ A sample of  the *satno.txt* file is as follows:
 >>> # sats_id = [47,58,52139,52140,52150] # Norad IDs of space objects
 >>> # xyz_gcrf = tle.predict(t_list,sats_id)
 >>> print(xyz_gcrf.shape)
+>>> # (4904, 10, 3)
 ```
-
-    (4904, 10, 3)
 
 ### Arc Matching
 
@@ -695,8 +693,6 @@ For the **space-based optical angle-only** measurements, we use the same process
 >>> # 203    22694  6.611253  0.000843  14.627818  7.031644  295.619471  250.970436  2.571235    0.0  2022-03-24T19:43:11.000Z
 ```
 
-
-
 For the **space-based radar range+angle** measurements, we use the methods of **Gibbs/Herrick-Gibbs** and **Elliptical Orbit Fitting** to determine the initial orbit of space objects.
 
 Extract the necessary information for Initial Orbit Determination(IOD) from **space-based radar range+angle** measurements.
@@ -767,6 +763,10 @@ Compare the results with the true orbits from TLE.
 ```
 
 ## Change log
+
+- **0.1.1 — Sep 23, 2023**
+  
+  - Fixed the bug that when downloading TLE data from SpaceTrack, the automatically generated wrong authentication file due to incorrect user name or password input could no longer be updated.
 
 - **0.1.0 — Sep 13, 2023**
   
