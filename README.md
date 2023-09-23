@@ -2,14 +2,31 @@
 
 [![PyPI version shields.io](https://img.shields.io/pypi/v/orbdtools.svg)](https://pypi.python.org/pypi/orbdtools/) [![PyPI pyversions](https://img.shields.io/pypi/pyversions/orbdtools.svg)](https://pypi.python.org/pypi/orbdtools/) [![PyPI status](https://img.shields.io/pypi/status/orbdtools.svg)](https://pypi.python.org/pypi/orbdtools/) [![GitHub contributors](https://img.shields.io/github/contributors/lcx366/ORBDTOOLS.svg)](https://GitHub.com/lcx366/ORBDTOOLS/graphs/contributors/) [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://GitHub.com/lcx366/ORBDTOOLS/graphs/commit-activity) [![GitHub license](https://img.shields.io/github/license/lcx366/ORBDTOOLS.svg)](https://github.com/lcx366/ORBDTOOLS/blob/master/LICENSE) [![Documentation Status](https://readthedocs.org/projects/orbdtools/badge/?version=latest)](http://orbdtools.readthedocs.io/?badge=latest) [![Build Status](https://travis-ci.org/lcx366/orbdtools.svg?branch=master)](https://travis-ci.org/lcx366/orbdtools)
 
-This package is on its way to become an archive of scientific routines for data processing related to Arc Matching, Arc Associating, Initial Orbit Determination(IOD), Cataloging OD, and Precise OD. Currently, the package only implements a small number of functional modules, and subsequent new modules will be added and updated one after another. So far, operations on Arc Matching include:
+This package is on its way to become an archive of scientific routines for data processing related to Arc Matching, Arc Associating, Initial Orbit Determination(IOD), Cataloging OD, and Precise OD. Currently, the package only implements a small number of functional modules, and subsequent modules will be added and updated one after another. 
 
-1. Matching of angle measurement data to space objects with TLE file; 
-2. Matching of spaced-based radar measurement data(range+angle) to space objects with TLE file;
-3. Data processing related to TLE file:
-   - Reading and parsing of TLE file
-   - Calculation of the mean orbital elements(only long-term items are considered) in a certain epoch
-   - Orbital Propagation using SGP4/SDP4
+So far, **operations on Arc Matching** include:
+
+1. Matching of angle-only measurements(RA and DEC) to space objects with TLE file; 
+2. Matching of radar range+angle measurements data to space objects with TLE file;
+
+**Operations on TLE file** include:
+
+1. Read and parse a TLE file
+2. Calculation of the mean orbital elements(only long-term items are considered) at a certain epoch
+3. Orbital Propagation using SGP4/SDP4
+
+**Operations on IOD** include:
+
+- Estimate classical orbital elements from three-points radar measurements using Gibbs/Herrick-Gibbs Method.
+- Estimate classical orbital elements from multiple-points radar measurements using Elliptical Orbit Fitting Method.
+- Estimate classical orbital elements from optical angle-only measurements using 
+  - Near-Circular Orbit Hypothesis method
+  - Gauss method
+  - Laplace method
+  - Laplace method
+  - Double-R method
+  - Gooding method
+  - FG-Series method
 
 ## How to Install
 
@@ -797,4 +814,4 @@ Compare the results with the true orbits from TLE.
 
 - [Skyfield](https://rhodesmill.org/skyfield/)
 - [sgp4](https://pypi.org/project/sgp4/)
-- [lowess](https://pypi.org/project/loess/)README.md
+- [lowess](https://pypi.org/project/loess/)
