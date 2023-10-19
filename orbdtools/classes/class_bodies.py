@@ -18,7 +18,10 @@ class Body(object):
             setattr(self, key, info[key])
             
     def __repr__(self):
-        return f"{self.name}({self.symbol})" 
+        """
+        Returns a more information-rich string representation of the Body object.
+        """
+        return f"<Body object: {self.name}({self.symbol})>" 
 
     def create_body(info):
         """

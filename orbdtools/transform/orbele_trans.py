@@ -272,12 +272,13 @@ def E_to_nu(E,ecc,degrees=True):
     Outputs:
         nu -> [array-like,float] True Anomaly, in (-π,π) or (-360,360)
     """
+    twopi = Const.twopi
     if degrees:
         E_rad = np.deg2rad(E)
         nu_rad = 2 * np.arctan(np.sqrt((1 + ecc) / (1 - ecc)) * np.tan(E_rad / 2))
-        nu = np.rad2deg(nu_rad)
+        nu = np.rad2deg(nu_rad) % 360
     else:    
-        nu = 2 * np.arctan(np.sqrt((1 + ecc) / (1 - ecc)) * np.tan(E / 2))
+        nu = 2 * np.arctan(np.sqrt((1 + ecc) / (1 - ecc)) * np.tan(E / 2)) % twopi
     return nu 
 
 def F_to_nu(F, ecc,degrees=True):

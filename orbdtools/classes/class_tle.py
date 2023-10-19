@@ -20,8 +20,8 @@ class TLE(object):
     """
     class of Two Line Elements
         Attributes:
-            - df -> TLE information in form of pandas dataframe, which includes NORAD IDs, mean orbital elements(a, ecc, inc, raan, argp, M), h, bstar, and epoch.
-            - range_epoch -> Epoch coverage for TLE file in format of [min, median, max]
+            - df -> TLE database in form of pandas dataframe, which includes NORAD IDs, mean orbital elements(a, ecc, inc, raan, argp, M), h, bstar, and epoch.
+            - range_epoch -> Epoch coverage of the TLE file in format of [epoch_min, epoch_max]
             - h_uec -> Direction vector of angular momentum
             - adot -> Rate of the semi-major axis in [L_nd/min] at the refenence epoch, where L_nd = 6378.135 km for Reference Earth Model - WGS72
             - edot -> Rate of the orbital eccentricity at the refenence epoch
@@ -32,21 +32,42 @@ class TLE(object):
             - nddot -> The second derivative of the mean motion in [rad/min^3] at the refenence epoch
             - _sats_Satrec -> list of space objects in class of Satrec
             - _sats_EarthSatellite -> list of space objects in class of EarthSatellite
+            - _statistic -> Statistics of the TLE database
         Methods:
+            - retrieve -> Retrieve space objects from the TLE database according to the NORAD IDs.
             - atEpoch -> Calculate the mean orbital elements at a certain epoch.
             - predict -> Calculate the cartesian coordinates of space objects in GCRF(Geocentric Celetial Reference Frame) over a period of time.    
             - download -> Download TLE files from [SPACETRACK](https://www.space-track.org)
     """
     def __init__(self,sats_Satrec,sats_EarthSatellite,info=None):
+        """
+        Initialize an instance of class TLE.
+        """
+
+        df = info['df']
+        df_statistic = df[['a','ecc','inc','raan','argp','h','bstar','mjd']].describe().loc['mean':]
+        mjd_statistic = df_statistic['mjd'].loc[['mean','min','25%','50%','75%','max']]
+        df_statistic['mjd'].loc[['mean','min','25%','50%','75%','max']] = Time(mjd_statistic, format='mjd').isot
+        mjd_statistic = df_statistic['mjd']
+        range_epoch = mjd_statistic.loc[['min','max']].to_list()
+        df_statistic.rename(columns={"mjd": "epoch"},inplace=True)
 
         for key in info.keys():
             setattr(self, key, info[key])
+
+        self._info = info 
+        self.range_epoch = range_epoch
+        self._statistic = df_statistic
         self._sats_Satrec = sats_Satrec
         self._sats_EarthSatellite = sats_EarthSatellite
-        self._info = info 
 
     def __repr__(self):
-        return 'instance of class TLE'    
+        """
+        Returns a more information-rich string representation of the TLE object.
+        """
+        counts = len(self.adot)
+        statistic = self._statistic
+        return '<TLE object: Counts = {:d} Statistic = \n{}>'.format(counts,self._statistic)    
 
     def from_file(fn,t=None,out_days=7):
         """
@@ -65,7 +86,6 @@ class TLE(object):
         Outputs:
             tle -> Instance of class TLE
         """
-
         ts = data_prepare.ts
 
         # load and parse the TLE data
@@ -83,16 +103,17 @@ class TLE(object):
         n,ndot,nddot = [],[],[]
         unvalid_index = []
 
-        if t is not None: t = ts.from_astropy(Time(t))
+        if t is not None: 
+            ta = Time(t)
+            tsf = ts.from_astropy(ta)
 
         j = 0
         for sat in sats_EarthSatellite:
-
+            epoch_jd = sat.epoch # in time scale of TT
             if t is not None:
-                if np.abs(sat.epoch - t) > out_days: 
+                if np.abs(epoch_jd - tsf) > out_days: 
                     unvalid_index.append(j)
                     continue
-
             noradid = sat.model.satnum
             a = sat.model.a # normalized semi-major axis
             ecc = sat.model.ecco
@@ -100,8 +121,9 @@ class TLE(object):
             inc_deg,raan_deg,argp_deg,M_deg = np.rad2deg(inc_rad),np.rad2deg(raan_rad),np.rad2deg(argp_rad),np.rad2deg(M_rad) # in deg
             h = np.sqrt(a*(1-ecc**2))
             bstar = sat.model.bstar
-            epoch = sat.epoch.utc_iso(places=3)
-            data.append([noradid,a,ecc,inc_deg,raan_deg,argp_deg,M_deg,h,bstar,epoch])
+            epoch = epoch_jd.utc_iso(places=3)
+            mjd = Time(epoch).mjd
+            data.append([noradid,a,ecc,inc_deg,raan_deg,argp_deg,M_deg,h,bstar,epoch,mjd])
             h_uec.append([np.sin(raan_rad)*np.sin(inc_rad),-np.cos(raan_rad)*np.sin(inc_rad),np.cos(inc_rad)]) # unit vector of Angular momentum
 
             # approximate rate
@@ -121,47 +143,81 @@ class TLE(object):
         adot,edot,raandot,argpdot = np.array(adot),np.array(edot),np.array(raandot),np.array(argpdot)
         n,ndot,nddot = np.array(n),np.array(ndot),np.array(nddot)   
     
-        df = pd.DataFrame(data, columns=['noradid','a','ecc','inc','raan','argp','M','h','bstar','epoch'])  
+        # Statistics for TLE database
+        df = pd.DataFrame(data, columns=['noradid','a','ecc','inc','raan','argp','M','h','bstar','epoch','mjd'])
 
-        epoch_str = np.array(df['epoch'],dtype=str)
-        epoch_mjd = Time(epoch_str).mjd
-
-        epoch_min,epoch_max = df['epoch'].min(),df['epoch'].max()
-        epoch_median = Time(np.median(epoch_mjd),format='mjd').isot+'Z'
-
-        range_epoch = [epoch_min,epoch_median,epoch_max]
-
-        info = {'df':df,'range_epoch':range_epoch,'h_uec':h_uec,'adot':adot,'edot':edot,'raandot':raandot,'argpdot':argpdot,'n':n,'ndot':ndot,'nddot':nddot} 
+        info = {'df':df,'h_uec':h_uec,'adot':adot,'edot':edot,'raandot':raandot,'argpdot':argpdot,'n':n,'ndot':ndot,'nddot':nddot} 
 
         sats_Satrec_valid = np.delete(sats_Satrec,unvalid_index) 
         sats_EarthSatellite_valid = np.delete(sats_EarthSatellite,unvalid_index) 
 
         return TLE(sats_Satrec_valid,sats_EarthSatellite_valid,info)
 
-    def atEpoch(self,epoch):
+    def retrieve(self,sats_id=None):
+        """
+        Retrieve space objects from the TLE database according to their NORAD IDs.
+
+        Usage:
+            >>> sats_id = [47,58,52139,52140,52150] # NORAD IDs of space objects
+            >>> tle_retrieve = tle.retrieve(sats_id)
+        Inputs:
+            sats_id -> [list of int,optinal,default=None] NORAD IDs of space objects. If None, all space objects will participate in the calculation.  
+        Outputs:
+            tle_retrieve -> Instance of class TLE
+        """
+        if sats_id is None:
+            in_flag = np.ones_like(self.n).astype(bool)
+        else:
+            in_flag = self.df['noradid'].isin(sats_id)
+
+        sats_Satrec = np.array(self._sats_Satrec)[in_flag]
+        sats_EarthSatellite = np.array(self._sats_EarthSatellite)[in_flag]   
+        
+        info = deepcopy(self._info)
+
+        for key in info.keys():
+            info[key] = info[key][in_flag]
+
+        return TLE(sats_Satrec,sats_EarthSatellite,info)
+
+    def atEpoch(self,epoch,sats_id=None):
         """
         Calculate the mean orbital elements at a certain epoch.
 
         Usage:
             >>> epoch_obs = '2022-05-24T08:38:34.000Z'
             >>> tle_epoch = tle.atEpoch(epoch_obs)
+            >>> # sats_id = [10,47,58,52139]
+            >>> # tle_epoch = tle.atEpoch(epoch_obs,sats_id)
         Inputs:
-            epoch -> [str] Epoch at which to calculate the mean orbital elements
+            epoch -> [str or Astropy Time object] Epoch at which to calculate the mean orbital elements
+            sats_id -> [list of int,optinal,default=None] NORAD IDs of space objects. If None, all space objects will participate in the calculation.  
         Outputs:
             tle_epoch -> Instance of class TLE with updated mean orbital elements
         """
-        ts = data_prepare.ts
-        ta = Time([epoch]*len(self.adot))
-        t = ts.from_astropy(ta)
+
+        if sats_id is None:
+            in_flag = np.ones_like(self.n).astype(bool)
+        else:
+            in_flag = self.df['noradid'].isin(sats_id)
+
+        sats_Satrec = np.array(self._sats_Satrec)[in_flag]
+        sats_EarthSatellite = np.array(self._sats_EarthSatellite)[in_flag]   
         
         info = deepcopy(self._info)
-        info.pop('range_epoch', None) # delete the key 'range_epoch'
+
+        for key in info.keys():
+            info[key] = info[key][in_flag]
 
         df = info['df']
         h_uec = info['h_uec']
 
+        ts = data_prepare.ts
+        ta = Time([epoch]*len(sats_Satrec))
+        tsf = ts.from_astropy(ta) 
+
         j = 0
-        for sat,t_i in zip(self._sats_EarthSatellite,t):
+        for sat,t_i in zip(sats_EarthSatellite,tsf):
             sat.at(t_i)
             inc_rad = sat.model.im
             raan_rad = sat.model.Om
@@ -174,16 +230,17 @@ class TLE(object):
             M = np.rad2deg(sat.model.mm) % 360
             h = np.sqrt(sat.model.am*(1-sat.model.em**2))
 
-            df.iloc[j,1:-2] = [a,ecc,inc,raan,argp,M,h]
+            df.iloc[j,1:-3] = [a,ecc,inc,raan,argp,M,h]
 
             h_uec[j] = [np.sin(raan_rad)*np.sin(inc_rad),-np.cos(raan_rad)*np.sin(inc_rad),np.cos(inc_rad)] # unit vector of Angular momentum
 
-            j += 1
+            j += 1   
 
         df['epoch'] = ta.isot
         df['epoch'] += 'Z'
+        df['mjd'] = ta.mjd
 
-        return TLE(self._sats_Satrec,self._sats_EarthSatellite,info)    
+        return TLE(sats_Satrec,sats_EarthSatellite,info)    
             
     def predict(self,t,sats_id=None):
         """
@@ -196,7 +253,7 @@ class TLE(object):
             >>> xyz_gcrf = tle.predict(t_list)
         Inputs:
             t -> [str or list of str] time to perform a orbital propagation
-            sats_id -> [list of int] NORAD IDs of space objects  
+            sats_id -> [list of int,optinal,default=None] NORAD IDs of space objects  
         Outputs:
             xyz_gcrf -> [3D array] Cartesian coordinates of space objects in GCRF    
         """

@@ -8,8 +8,11 @@ class MatrixTrans(object):
             setattr(self, key, info[key])   
 
     def __repr__(self):
+        """
+        Returns a more information-rich string representation of the MatrixTrans object.
+        """
         frame1,frame2 = self._transname.split('_')
-        return "Transform Matrix between reference frame '{:s}' and '{:s}'".format(frame1,frame2)      
+        return "<MatrixTrans object: '{:s}' ⇌ '{:s}'>".format(frame1.upper(),frame2.upper())      
 
 class FrameTrans(object):
     """

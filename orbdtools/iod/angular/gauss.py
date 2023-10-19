@@ -181,7 +181,7 @@ def gauss_estimate(mu,tof,tau,los3p,xyz_site3p,degrees=True):
     eles = []
     for r2 in poly_roots_real_positive:
         rv2_vec0 = gauss_iod(mu,xyz_site3p,los3p,params,r2)
-        res = least_squares(fun_resi,rv2_vec0, args=(mu,xyz_site3p,los3p,params),loss='huber')
+        res = least_squares(fun_resi,rv2_vec0, args=(mu,xyz_site3p,los3p,params),method='lm')
         ele = rv2coe(res.x,mu,degrees) 
         eles.append(ele)       
 

@@ -2,7 +2,7 @@ from setuptools import setup,find_packages
 
 setup(
     name='orbdtools',
-    version='0.1.1',
+    version='0.2.0',
     description='A set of routines for data processing related to ORBit Determination(ORBD) of space objects',
     author='Chunxiao Li',
     author_email='lcx366@126.com',
@@ -11,15 +11,14 @@ setup(
     long_description_content_type='text/markdown',
     long_description=open('README.md', 'rb').read().decode('utf-8'),
     keywords = ['Arc Matching','Arc Association','Initial OD','Cataloging OD','Precise OD'],
-    python_requires = '>=3.8',
+    python_requires = '>=3.10',
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Education',
         'Intended Audience :: Science/Research',
-        'Programming Language :: Python :: 3.8',
-        'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
         'License :: OSI Approved :: MIT License',
         ],
     packages = find_packages(),

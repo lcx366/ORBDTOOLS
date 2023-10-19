@@ -173,7 +173,7 @@ def doubleR_estimate(mu,tof,tau,los3p,xyz_site3p,degrees=True):
     # Guess the initial semi-major axis
     a0 = get_a0(mu,los3p,xyz_site3p,tof)
     r12 = np.array([a0]*2)
-    res = least_squares(fun_resi,r12, args=(mu,xyz_site3p,los3p,tof,tau,degrees),loss='huber',bounds=([1,1],[8,8]))
+    res = least_squares(fun_resi,r12, args=(mu,xyz_site3p,los3p,tof,tau,degrees),loss='huber',bounds=([1,1],[8,8]),method='dogbox')
     F1,F2,ele = doubleR_assist(res.x,mu,xyz_site3p,los3p,tof,tau,degrees)
      
     return ele   

@@ -156,7 +156,6 @@ def fun_resi_optical(coe0,t_,mu,losnp,xyz_sitenp,degrees):
     rs_vec = coe2rv(coe_t,mu,degrees)[:,:3]
     rhos_vec = rs_vec - xyz_sitenp
     proj_insight = np.sum(rhos_vec*losnp,axis=1)
-
     residuals = proj_insight/norm(rhos_vec,axis=1) - 1
 
     return residuals            
@@ -174,7 +173,7 @@ def fun_resi_radar(coe0,t_,mu,xyz_np,degrees):
         xyz_np -> [2D array with shape of nx3] Cartesian coordinates of the space object
         degrees -> [bool] Unit of angular variables in classical orbital elements. If True, angular variables are in [deg], otherwise in [rad].
     Outputs:
-        residuals -> Norm of the O-C of the position vector of the space object
+        residuals -> [Array of float] Norm of the O-C of the position vector of the space object
     """
 
     coe_t = coe_propagation(coe0,t_,mu,degrees)
@@ -221,7 +220,7 @@ def getnpoints(n,t,*args):
 
     return out 
 
-def to_ele_dict_optical(mu,t0,t_,eles,losnp,xyz_sitenp,degrees,rms_tol=2e-4):   
+def to_ele_dict_optical(mu,t0,t_,eles,losnp,xyz_sitenp,degrees,rms_tol=1e-8):   
     """
     Determine the validity of the orbital elements according to the O-C for optical angle-only measurement data.
 
@@ -235,7 +234,7 @@ def to_ele_dict_optical(mu,t0,t_,eles,losnp,xyz_sitenp,degrees,rms_tol=2e-4):
         losnp -> [2D array with shape of nx3] Line-Of-Sight(LOS) vector of the space object relative to the site
         xyz_sitenp -> [2D array with shape of nx3] Cartesian coordinates of the site
         degrees -> [bool] Unit of angular variables in classical orbital elements. If True, angular variables are in [deg], otherwise in [rad].
-        rms_tol -> [float,optional,default=3e-4] Tolerance of RMS of O-C. If rms > rms_tol, the orbital elements is considered invalid, othwewise valid. 
+        rms_tol -> [float,optional,default=1e-8] Tolerance of RMS of O-C. If rms > rms_tol, the orbital elements is considered invalid, othwewise valid. 
     Outputs:
         ele_df -> [Dataframe of Pandas] Dataframe for classical orbital elements with keys and values as follows
             epoch -> [str] Epoch of orbital elements in UTC
@@ -249,6 +248,7 @@ def to_ele_dict_optical(mu,t0,t_,eles,losnp,xyz_sitenp,degrees,rms_tol=2e-4):
             h -> [float] Modulus of angular momentum
             status -> [str] Status of IOD determined by RMS of O-C: 'success' or 'failed'. 
             The status of IOD are only for reference, meaning that although it shows success, the orbital elements may converge to a trivial or even wrong orbit.
+        rms -> [float] RMS of O-C     
     """ 
     ele_df = pd.DataFrame({})
     for ele in eles:
@@ -271,9 +271,9 @@ def to_ele_dict_optical(mu,t0,t_,eles,losnp,xyz_sitenp,degrees,rms_tol=2e-4):
         ele_df_i = pd.DataFrame(ele_dict)
         ele_df = pd.concat([ele_df, ele_df_i],ignore_index=True)
 
-    return ele_df   
+    return ele_df,rms   
 
-def to_ele_dict_radar(mu,t0,t_,ele,xyz_np,degrees,rms_tol=3e-4):   
+def to_ele_dict_radar(mu,t0,t_,ele,xyz_np,degrees,rms_tol=1e-8):   
     """
     Determine the validity of the orbital elements according to the O-C for radar range+angle measurements.
 
@@ -286,7 +286,7 @@ def to_ele_dict_radar(mu,t0,t_,ele,xyz_np,degrees,rms_tol=3e-4):
         eles -> [list of float with 6 elements] Classical orbital elements at time of t0
         xyz_np -> [2D array with shape of nx3] Cartesian coordinates of the space object
         degrees -> [bool] Unit of angular variables in classical orbital elements. If True, angular variables are in [deg], otherwise in [rad].
-        rms_tol -> [float,optional,default=3e-4] Tolerance of RMS of O-C. If rms > rms_tol, the orbital elements is considered invalid, othwewise valid. 
+        rms_tol -> [float,optional,default=1e-8] Tolerance of RMS of O-C. If rms > rms_tol, the orbital elements is considered invalid, othwewise valid. 
     Outputs:
         ele_df -> [Dataframe of Pandas] Dataframe for classical orbital elements with keys and values as follows
             epoch -> [str] Epoch of orbital elements in UTC
@@ -300,6 +300,7 @@ def to_ele_dict_radar(mu,t0,t_,ele,xyz_np,degrees,rms_tol=3e-4):
             h -> [float] Modulus of angular momentum
             status -> [str] Status of IOD determined by RMS of O-C: 'success' or 'failed'. 
             The status of IOD are only for reference, meaning that although it shows success, the orbital elements may converge to a trivial or even wrong orbit.
+        rms -> [float] RMS of O-C    
     """ 
     a,ecc,inc,raan,argp,nu = ele 
 
@@ -319,4 +320,4 @@ def to_ele_dict_radar(mu,t0,t_,ele,xyz_np,degrees,rms_tol=3e-4):
     ele_dict = {'epoch':[t0.isot],'a':[a],'ecc':[ecc],'inc':[inc],'raan':[raan],'argp':[argp],'nu':[nu],'M':[M],'h':[h],'status':[status]}
     ele_df = pd.DataFrame(ele_dict)
 
-    return ele_df     
+    return ele_df,rms     

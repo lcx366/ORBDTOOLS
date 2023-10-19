@@ -7,7 +7,7 @@ This package is on its way to become an archive of scientific routines for data 
 So far, **operations on Arc Matching** include:
 
 1. Matching of angle-only measurements(RA and DEC) to space objects with TLE file; 
-2. Matching of radar range+angle measurements data to space objects with TLE file;
+2. Matching of radar range+angle measurements to space objects with TLE file;
 
 **Operations on TLE file** include:
 
@@ -17,13 +17,15 @@ So far, **operations on Arc Matching** include:
 
 **Operations on IOD** include:
 
-- Estimate classical orbital elements from three-points radar measurements using Gibbs/Herrick-Gibbs Method.
-- Estimate classical orbital elements from multiple-points radar measurements using Elliptical Orbit Fitting Method.
+- Estimate classical orbital elements from radar range+angle measurements using 
+  - Gibbs/Herrick-Gibbs method
+  - Elliptical Orbit Fitting method
+  - FG-Series method
 - Estimate classical orbital elements from optical angle-only measurements using 
   - Near-Circular Orbit Hypothesis method
   - Gauss method
   - Laplace method
-  - Laplace method
+  - Multiple-points Laplace method
   - Double-R method
   - Gooding method
   - FG-Series method
@@ -94,6 +96,8 @@ ENZ(East North Zenith) is used by *Curtis, Howard. Orbital Mechanics for Enginee
 >>> matrix_trans = FrameTrans.topo_itrf_mat(lon,lat) 
 >>> topo2itrf_mat = matrix_trans.topo2itrf_mat
 >>> itrf2topo_mat = matrix_trans.itrf2topo_mat
+>>> print(matrix_trans)
+>>> # <MatrixTrans object: 'TOPO' ⇌ 'ITRF'>
 ```
 
 #### Calculate the transformation matrix between GCRF(Geocentric Celestial Reference Frame)/ICRF(International Celestial Reference Frame) and  ITRF(International Terrestrial Reference Frame).
@@ -165,6 +169,8 @@ Ignoring the subtle effects of epoch offset, GCRF/ICRF is equivalent to the J200
 >>> ecc,inc,raan,argp,nu = 0.1,30,40,50,60 # [i, Ω, ω, v] in unit of [deg]
 >>> #ecc,inc,raan,argp,nu = [0.1,0.2],[30,40],[40,50],[50,60],[60,70] # [i, Ω, ω, v] in unit of [deg]
 >>> matrix_trans = FrameTrans.ECI_NTW_mat(ecc,inc,raan,argp,nu)
+>>> ECI2NTW_mat = matrix_trans.ECI2NTW_mat
+>>> NTW2ECI_mat = matrix_trans.NTW2ECI_mat
 ```
 
 #### Calculate the transformation matrix between the Earth Centred Inertial (ECI) reference frame and the RADAR(x -> Along-track, y -> Cross-track, z -> Radial) reference frame.
@@ -379,20 +385,35 @@ A sample of  the *satno.txt* file is as follows:
 >>> epoch_obs = '2022-05-24T08:38:34.000Z' # Approximate epoch of the observed arc, which is optional
 >>> tle = TLE.from_file(tle_file,epoch_obs) # Only TLEs within a week before and after the observation epoch are considered
 >>> # tle = TLE.from_file(tle_file) # All TLEs are considered
->>> print(tle.range_epoch) # Epoch coverage for TLE files in format of [min, median, max]
+>>> print(tle.range_epoch) # Release epoch coverage for TLE files, [min, max]
+>>> # ['2022-05-18T23:07:15.444', '2022-05-24T06:32:39.874']
 >>> print(tle.df)
->>> # ['2022-05-18T23:07:15.444Z', '2022-05-23T22:00:02.000Z', '2022-05-24T06:32:39.874Z']
+>>> print(tle._statistic)
 ```
 
 <p align="middle">
   <img src="readme_figs/df.png" width="700" />
 </p>
 
+<p align="middle">
+  <img src="readme_figs/tle_statistic.png" width="700" />
+</p>
+
+#### Retrieve the TLE database
+
+Retrieve the TLE database with the space objects of interest and generate a simplified database.
+
+```python
+>>> sats_id = [10,47,58,52139]
+>>> tle_r = tle.retrieve(sats_id)
+```
+
 #### Calculate the mean orbital elements at a certain epoch
 
 ```python
 >>> tle_epoch = tle.atEpoch(epoch_obs)
 >>> print(tle_epoch.df)
+>>> # tle_epoch = tle.atEpoch(epoch_obs,sats_id)
 ```
 
 <p align="middle">
@@ -442,7 +463,7 @@ Match the arc to space objects with TLE file.
 >>> arc_optical.arc_match(tle) # Match the observation arc to TLE
 >>> 
 >>> print(arc_optical.code_match)
->>> print(arc_optical.satnum)
+>>> print(arc_optical.satid)
 >>> print(arc_optical.disp_match)
 ```
 
@@ -483,7 +504,7 @@ Match the arc to space objects with TLE file. Note: the RADAR reference frame is
 >>> arc_radar.arc_match(tle)
 >>> 
 >>> print(arc_radar.code_match)
->>> print(arc_radar.satnum)
+>>> print(arc_radar.satid)
 >>> print(arc_radar.disp_match)
 ```
 
@@ -493,7 +514,7 @@ Match the arc to space objects with TLE file. Note: the RADAR reference frame is
 
 ### Implementation of some classic Initial Orbit Determination(IOD) methods
 
-For optical angle-only measurement data, the methods of **Near-Circular Orbit Hypothesis**, **Gauss**, **Laplace**, **Multiple-points Laplace**, **Double-R**, **Gooding**, and **FG-Series** are provided for determining the initial orbit of space objects in this package. For radar range+angle measurement data, the methods of **Gibbs/Herrick-Gibbs** and **Elliptical Orbit Fitting** are provided for determining the initial orbit of space objects in this package.
+For optical angle-only measurement data, the methods of **Near-Circular Orbit Hypothesis**, **Gauss**, **Laplace**, **Multiple-points Laplace**, **Double-R**, **Gooding**, and **FG-Series** are provided for determining the initial orbit of space objects in this package. For radar range+angle measurement data, the methods of **Gibbs/Herrick-Gibbs**, **Elliptical Orbit Fitting** and **FG-Series** are provided for determining the initial orbit of space objects in this package.
 
 Here we use ground-based optical angle-only  measurements, space-based optical angle-only measurements and radar range+angle measurements as examples to test various  IOD methods and compare them with the true orbits from TLE.
 
@@ -534,7 +555,7 @@ The traditional two-point Near-Circular Orbit Hypothesis method is improved by c
 
 ```python
 >>> arc_iod.circular(ellipse_only=False)
->>> print(arc_iod.df.to_string())
+>>> print(arc_iod)
 >>> #                      epoch         a       ecc       inc       raan        argp     nu      M         h   status
 >>> # 0  2022-01-18T21:31:36.000  1.310295  0.000002  52.01579  51.568628  314.478385  180.0  180.0  1.144681  success
 ```
@@ -646,6 +667,8 @@ Compare the results with the true orbits from TLE.
 >>> #       noradid         a       ecc      inc       raan       argp           M        h     bstar                     epoch
 >>> # 1900    25872  1.312288  0.001365  51.9388  51.796242  187.68949  306.956591  1.14555  0.000343  2022-01-18T21:31:36.000Z
 ```
+
+Note that the Mean Elements involved in the SGP4 propagator are in a **True Equator Mean Equinox** (TEME) reference frame. The Orbital Elements from IOD are in an **ECI** reference frame.
 
 For the **space-based optical angle-only** measurements, we use the same processing flow as the ground-based measurements to test IOD methods mentioned above.
 
@@ -765,6 +788,15 @@ For more information about the method, please refer to
 >>> # 0  2022-05-24T08:38:34.000  1.191645  0.106694  144.1329  292.686922  269.482702  179.250624  179.076922  1.085394  success
 ```
 
+#### FG-Series method
+
+```python
+>>> arc_iod.fg_series()
+>>> print(arc_iod.df.to_string())
+>>> #                      epoch         a       ecc         inc        raan        argp          nu           M         h   status
+>>> # 0  2022-05-24T08:38:34.500  1.191482  0.106847  144.132644  292.666661  269.549063  179.190142  179.002129  1.085302  success
+```
+
 Compare the results with the true orbits from TLE.
 
 ```python
@@ -779,7 +811,150 @@ Compare the results with the true orbits from TLE.
 >>> # 46     1616  1.191409  0.10819  144.2312  293.055123  269.557158  179.098994  1.08511  0.000606  2022-05-24T08:38:34.000Z
 ```
 
+### Cataloging OD
+
+The SGP4 propagator is used to implement the Cataloging OD. 
+
+#### Case 1: Update TLE
+
+Read, load, and preprocess the **first** segment of observation data.
+
+```python
+>>> import numpy as np
+>>> obs_data = np.loadtxt('test6/T38044_S1_1_C1_1.dat',dtype=str,skiprows=1) # Load the observation file
+>>> # extract the necessary data
+>>> t = obs_data[:,0] # Obsevation time in UTC
+>>> xyz_site = obs_data[:,1:4].astype(float) # Cartesian coordinates of the site in GCRF, [km]
+>>> radec = obs_data[:,4:6].astype(float) # Ra and Dec of space object, in [deg]
+>>> radec[:,0] *= 15 # Convert hours to degrees
+>>> from orbdtools import ArcObs
+>>> arc_optical1 = ArcObs({'t':t,'radec':radec,'xyz_site':xyz_site}) # Load the necessary data
+>>> arc_optical1.lowess_smooth()
+>>>print(arc_optical1)
+>>> # <ArcObs object: OPTICAL Start Time = 2022-07-21T17:39:23.000Z TOF ≈ 14s N_DATA = 15 N_OUTLIER = 0>
+```
+
+Read, load, and preprocess the **second** segment of observation data.
+
+```python
+>>> import numpy as np
+>>> obs_data = np.loadtxt('test6/T38044_S1_2_C1_2.dat',dtype=str,skiprows=1) # Load the observation file
+>>> # extract the necessary data
+>>> t = obs_data[:,0] # Obsevation time in UTC
+>>> xyz_site = obs_data[:,1:4].astype(float) # Cartesian coordinates of the site in GCRF, [km]
+>>> radec = obs_data[:,4:6].astype(float) # Ra and Dec of space object, in [deg]
+>>> radec[:,0] *= 15 # Convert hours to degrees
+>>> from orbdtools import ArcObs
+>>> arc_optical2 = ArcObs({'t':t,'radec':radec,'xyz_site':xyz_site}) # Load the necessary data
+>>> arc_optical2.lowess_smooth()
+>>> print(arc_optical2)
+>>> # <ArcObs object: OPTICAL Start Time = 2022-07-22T04:07:14.000Z TOF ≈ 15s N_DATA = 16 N_OUTLIER = 0>
+```
+
+Simply join multiple tracklets of same type into one long arc.
+
+```python
+>>> arc_optical = arc_optical1.join(arc_optical2)
+>>> print(arc_optical)
+>>> # <ArcObs object: OPTICAL Start Time = 2022-07-21T17:39:23.000Z TOF ≈ 37686s N_DATA = 31 N_OUTLIER = 0>
+```
+
+Read the TLE file and build the TLE database.
+
+```python
+>>> from orbdtools import TLE
+>>> tle_file = 'test6/tle_20220722.txt'
+>>> tle = TLE.from_file(tle_file)
+>>> print(tle)
+>>> # <TLE object: Counts = 5085 Statistic = 
+>>> #              a       ecc         inc        raan        argp         h      bstar                    epoch
+>>> # mean  1.118852  0.003734   69.373955  187.292529  121.009249  1.057371  -0.000805  2022-07-21T06:19:10.865   
+>>> # std   0.049261  0.015257   19.375287  100.075645   88.498459  0.022713   0.012420                34.776595   
+>>> # min   1.043196  0.000010    0.048900    0.184800    0.072600  1.021369  -0.324750  2015-10-06T21:31:27.406   
+>>> # 25%   1.085838  0.000156   53.055000  103.900700   63.156600  1.042035  -0.000077  2022-07-21T16:52:32.458   
+>>> # 50%   1.085854  0.000219   64.850700  195.074100   83.576300  1.042043   0.000038  2022-07-21T18:54:48.226   
+>>> # 75%   1.151537  0.001668   86.446100  273.780000  157.690000  1.073042   0.000130  2022-07-21T20:29:56.001   
+>>> # max   1.312739  0.199768  144.639200  359.945100  359.999900  1.145748   0.110510  2022-07-22T00:52:00.062 >
+```
+
+Judging from the statistics of TLE release epochs, some TLEs of space targets have been lost. Next, make a cataloging OD and update the known TLE.
+
+```python
+>>> arc_cod = arc_optical.cod_sgp4(tle=tle,satid=38044})
+>>> print(arc_cod)
+>>> # <COD object: OPTICAL Start Time = 2022-07-21T17:39:23.000Z TOF ≈ 37686s Method = SGP4 ref = TEME Elements = [{'epoch': '2022-07-22T04:07:29.000', 'a': 1.2216952647118227, 'ecc': 0.0001034000939021131, 'inc': 51.9906, 'raan': 350.34109619644204, 'argp': 93.57548154290153, 'nu': 302.5034596834521, 'M': 302.5134520405819, 'h': 1.1053032396812972, 'bstar': 2.2761e-05, 'status': 'success'}]>
+>>> print(arc_cod.rms)
+>>> # 3.8832929209207407e-10
+```
+
+#### Case 2:  Generate TLE
+
+Use the Double-R method to perform IOD on the second segment of observation data, and initial orbital elements are achieved.
+
+```python
+>>> # Set the Earth as the central body of attraction
+>>> from orbdtools import Body
+>>> earth = Body.from_name('Earth')
+>>> arc_iod2 = arc_optical2.iod(earth)
+>>> arc_iod2.doubleR()
+>>> print(arc_iod2)
+>>> # <IOD object: OPTICAL Start Time = 2022-07-22T04:07:14.000Z TOF ≈ 15s Central Attraction = <Body object: Earth(♁)> Method = Double-R Elements = [{'epoch': '2022-07-22T04:07:22.000', 'a': 1.2214720783777222, 'ecc': 0.004615520543873671, 'inc': 51.95333793996982, 'raan': 350.14859234189373, 'argp': 311.12684765270643, 'nu': 84.36095628468172, 'M': 83.83479693639099, 'h': 1.1051905072527204, 'status': 'success'}]>
+>>> ele0_2 = arc_iod2.df.to_dict('records')[0]
+>>> print(ele)
+>>> # {'epoch': '2022-07-22T04:07:22.000','a': 1.2214720783777222,'ecc': 0.004615520543873671,'inc': 51.95333793996982,'raan': 350.14859234189373,'argp': 311.12684765270643,'nu': 84.36095628468172,'M': 83.83479693639099,'h': 1.1051905072527204,'status': 'success'}
+```
+
+Next, make a cataloging OD and generate a new TLE.
+
+```python
+>>> arc_cod = arc_optical.cod_sgp4(ele0_2,satid=38044,**{'intldesg':'11080E'})
+>>> print(arc_cod)
+>>> # <COD object: OPTICAL Start Time = 2022-07-21T17:39:23.000Z TOF ≈ 37686s Method = SGP4 ref = TEME Elements = [{'epoch': '2022-07-22T04:07:22.000', 'a': 1.2221352337224314, 'ecc': 0.00460718734467556, 'inc': 51.97968991527254, 'raan': 350.3335374798999, 'argp': 311.29131728492814, 'nu': 84.42427214124324, 'M': 83.89900344859379, 'h': 1.105490521201248, 'bstar': 0.0012188082859718142, 'status': 'success'}]>
+>>> print(arc_cod.rms)
+>>> # 3.9541376373616986e-08
+>>> print(arc_cod.tle_str)
+>>> # 
+```
+
+### Calculation and Estimation of Bstar
+
+```python
+>>> from astropy.time import Time
+>>> from orbdtools.cod.sgp4 import sgp4_bstar
+>>> 
+>>> # Mean Elements in TEME at epoch1
+>>> epoch1 = Time('2022-05-23T22:00:02.000Z')
+>>> ele1_teme = [1.071459,0.000154,53.2175,182.0098,49.6208,205.5672]
+>>> # Mean Elements in TEME at epoch2
+>>> epoch2 = Time('2022-05-25T08:38:34.000Z')
+>>> ele2_teme = [1.072465,0.000159,53.2175,175.255990,58.766942,261.018083]
+>>> 
+>>> # Calculate B*
+>>> a_ecc_inc1 = ele1_teme[:3]
+>>> a_ecc_inc2 = ele2_teme[:3]
+>>> bstar1 = sgp4_bstar.bstar_calculate(a_ecc_inc1,a_ecc_inc2,epoch1,epoch2,degrees=True)
+>>> 
+>>> # Estimate B*
+>>> bstar2 = sgp4_bstar.bstar_estimate(ele1_teme,ele2_teme,epoch1,epoch2,ref='TEME')
+>>> 
+>>> print('Calculated B*: ',bstar1)
+>>> print('Estimated  B*: ',bstar2)
+>>> 
+>>> # Calculated B*:  -0.02118445232232004
+>>> # Estimated  B*:  -0.02128338135900665
+```
+
 ## Change log
+
+- **0.2.0 — Oct 18, 2023**
+  
+  - Added the implementation of IOD with the FG-Series method for radar range+angle measurements.
+  - Added the implementation of Cataloging OD based on the SGP4/SDP4 propagator.
+  - Added the implementation of fusing multiple tracklets.
+  - Added the implementation of the calculation and estimation of Bstar involved in SGP4 propagator based on Mean Elements at two epoch times.
+  - Added statistics for TLE database
+  - Added an optional argument `sats_id` to `tle.atEpoch()`. It is now possible to propagate the mean orbit to a specific epoch only for the space objects of interest.
+  - Added a new method `retrieve` to `TLE` object. It is now possible to simplify the TLE database by the space objects of interest.
 
 - **0.1.1 — Sep 23, 2023**
   
@@ -806,9 +981,10 @@ Compare the results with the true orbits from TLE.
 
 ## Next Release
 
-- Implement IOD using the method of FG-Series for radar range+angle measurements
-- Improve the initial orbit based on the SGP4/SDP4 propagator
-- Implement the Battin algorithm for solving the lambert‘s problem
+- Implement the Arc Associating between two tracklets.
+- Implement the Arc Associating among tens of thousands of tracklets with the help of SQL.
+- Implement the Battin algorithm for solving the lambert's problem.
+- Implement the IOD for a long arc spanning multiple revolutions.
 
 ## Reference
 
