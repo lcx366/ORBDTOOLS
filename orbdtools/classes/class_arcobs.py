@@ -121,7 +121,6 @@ class ArcObs(object):
             raise Exception('Only optical angle measurement data or radar(ranging + angle) measurement data are supported.')
 
         info['_losnp_lowess'] = info['losnp'] = losnp
-        self.info = info
 
         for key in info.keys():
             setattr(self, key, info[key])
@@ -148,22 +147,21 @@ class ArcObs(object):
             An instance of class ArcObs with LOWESS processing    
         """
         ta = Time(self.t)
-        info = self.info
         if self.mode == 'optical': 
             flag = lowess_smooth_optical(ta,self.radec,frac)
-            self._radec_lowess = info['_radec_lowess'] = self.radec[flag]
+            self._radec_lowess = self.radec[flag]
         elif self.mode == 'radar':
             flag = lowess_smooth_radar(ta,self.azalt,self.r,frac)
-            self._r_lowess = info['_r_lowess'] = self.r[flag]
-            self._azalt_lowess = info['_azalt_lowess'] = self.azalt[flag]
-            self._orbele_site_lowess = info['_orbele_site_lowess'] = self.orbele_site[flag]
-            self._posnp_lowess = info['_posnp_lowess'] = self.posnp[flag]
+            self._r_lowess = self.r[flag]
+            self._azalt_lowess = self.azalt[flag]
+            self._orbele_site_lowess = self.orbele_site[flag]
+            self._posnp_lowess = self.posnp[flag]
 
-        self._ta_lowess = info['_ta_lowess'] = _ta_lowess = ta[flag]
-        self._xyz_site_lowess = info['_xyz_site_lowess'] = self.xyz_site[flag]
-        self._losnp_lowess = info['_losnp_lowess'] = self.losnp[flag]
-        self.flag_lowess = info['flag_lowess'] = flag   
-        self.tof = info['tof'] = (_ta_lowess[-1] - _ta_lowess[0]).sec
+        self._ta_lowess = _ta_lowess = ta[flag]
+        self._xyz_site_lowess = self.xyz_site[flag]
+        self._losnp_lowess = self.losnp[flag]
+        self.flag_lowess = flag   
+        self.tof = (_ta_lowess[-1] - _ta_lowess[0]).sec
 
         return None  
 
@@ -217,8 +215,6 @@ class ArcObs(object):
                 arc0._radec_lowess = np.append(arc0._radec_lowess,arc._radec_lowess,axis=0)  
                 arc0.losnp = np.append(arc0.losnp,arc.losnp,axis=0)
                 arc0._losnp_lowess = np.append(arc0._losnp_lowess,arc._losnp_lowess,axis=0)
-            arc0.info['radec'] = arc0.radec  
-            arc0.info['_radec_lowess'] = arc0._radec_lowess
         elif arcs_mode == 'radar':  
             for arc in arcs_list[1:]:
                 arc0.t = np.append(arc0.t,arc.t)
@@ -235,29 +231,10 @@ class ArcObs(object):
                 arc0.posnp = np.append(arc0.posnp,arc.posnp,axis=0)
                 arc0._posnp_lowess = np.append(arc0._posnp_lowess,arc._posnp_lowess,axis=0) 
                 arc0.orbele_site = np.append(arc0.orbele_site,arc.orbele_site,axis=0)
-                arc0._orbele_site_lowess = np.append(arc0._orbele_site_lowess,arc._orbele_site_lowess,axis=0) 
-
-            arc0.info['azalt'] = arc0.azalt
-            arc0.info['r'] = arc0.r
-            arc0.info['posnp'] = arc0.posnp
-            arc0.info['orbele_site'] = arc0.orbele_site
-
-            arc0.info['_azalt_lowess'] = arc0._azalt_lowess 
-            arc0.info['_r_lowess'] = arc0._r_lowess
-            arc0.info['_posnp_lowess'] = arc0._posnp_lowess
-            arc0.info['_orbele_site_lowess'] = arc0._orbele_site_lowess
+                arc0._orbele_site_lowess = np.append(arc0._orbele_site_lowess,arc._orbele_site_lowess,axis=0)
 
         arc0._ta_lowess = Time(arc0._ta_lowess)    
         arc0.tof = (arc0._ta_lowess[-1] - arc0._ta_lowess[0]).sec
-
-        arc0.info['t'] = arc0.t  
-        arc0.info['xyz_site'] = arc0.xyz_site
-        arc0.info['losnp'] = arc0.losnp
-        arc0.info['tof'] = arc0.tof
-        arc0.info['_ta_lowess'] = arc0._ta_lowess
-        arc0.info['_xyz_site_lowess'] = arc0._xyz_site_lowess
-        arc0.info['_losnp_lowess'] = arc0._losnp_lowess
-        arc0.info['flag_lowess'] = arc0.flag_lowess
         
         return arc0        
 
@@ -293,7 +270,6 @@ class ArcObs(object):
         |  0         | None              | No solution        | Failure | increase threshold |
         | -1         | list of NORAD IDs | Multiple solutions | Failure | decrease threshold |    
         """
-        info = self.info
         ta = self._ta_lowess
         xyz_site = self._xyz_site_lowess
 
@@ -326,9 +302,9 @@ class ArcObs(object):
                 threshold_slope = threshold_dict['threshold_slope'] 
             code_match,satid,disp_match = arcsat_match_radar(tle,ta,xyz_site,orbele_site,azalt,r,threshold_pre,threshold_deep,threshold_slope)
 
-        self.code_match = info['code_match'] = code_match
-        self.satid = info['satid'] = satid
-        self.disp_match = info['disp_match'] = disp_match  
+        self.code_match = code_match
+        self.satid = satid
+        self.disp_match = disp_match  
 
         return None
 
@@ -366,7 +342,7 @@ class ArcObs(object):
             mu_nd = body.mu/nd_unit.mu  
             Re_nd = body.Re/nd_unit.Re
 
-        info = self.info
+        info = self.__dict__
         ta = self._ta_lowess
         xyz_site = self._xyz_site_lowess
         xyz_site_nd = xyz_site / nd_unit._L # Convert to non-dimensional length unit [L_nd]
@@ -481,7 +457,7 @@ class ArcObs(object):
 
         ele_df = pd.DataFrame([ele_dict])
 
-        info = self.info.copy()
+        info = self.__dict__.copy()
         info['method'] = 'SGP4'
         info['ref'] = 'TEME'
         info['satid'] = satid

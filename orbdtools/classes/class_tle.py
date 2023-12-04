@@ -39,7 +39,7 @@ class TLE(object):
             - predict -> Calculate the cartesian coordinates of space objects in GCRF(Geocentric Celetial Reference Frame) over a period of time.    
             - download -> Download TLE files from [SPACETRACK](https://www.space-track.org)
     """
-    def __init__(self,sats_Satrec,sats_EarthSatellite,info=None):
+    def __init__(self,sats_Satrec,sats_EarthSatellite,info):
         """
         Initialize an instance of class TLE.
         """
@@ -55,7 +55,6 @@ class TLE(object):
         for key in info.keys():
             setattr(self, key, info[key])
 
-        self._info = info 
         self.range_epoch = range_epoch
         self._statistic = df_statistic
         self._sats_Satrec = sats_Satrec
@@ -173,7 +172,7 @@ class TLE(object):
         sats_Satrec = np.array(self._sats_Satrec)[in_flag]
         sats_EarthSatellite = np.array(self._sats_EarthSatellite)[in_flag]   
         
-        info = deepcopy(self._info)
+        info = deepcopy(self.__dict__)
 
         for key in info.keys():
             info[key] = info[key][in_flag]
@@ -204,7 +203,7 @@ class TLE(object):
         sats_Satrec = np.array(self._sats_Satrec)[in_flag]
         sats_EarthSatellite = np.array(self._sats_EarthSatellite)[in_flag]   
         
-        info = deepcopy(self._info)
+        info = deepcopy(self.__dict__)
 
         for key in info.keys():
             info[key] = info[key][in_flag]

@@ -381,7 +381,7 @@ A sample of  the *satno.txt* file is as follows:
 
 ```python
 >>> import numpy as np
->>> tle_file = 'test/tle_20220524.txt'
+>>> tle_file = 'test/test1/tle_20220524.txt'
 >>> epoch_obs = '2022-05-24T08:38:34.000Z' # Approximate epoch of the observed arc, which is optional
 >>> tle = TLE.from_file(tle_file,epoch_obs) # Only TLEs within a week before and after the observation epoch are considered
 >>> # tle = TLE.from_file(tle_file) # All TLEs are considered
@@ -445,7 +445,7 @@ Load the observation file and extract the optical angle-only measurement data.
 
 ```python
 >>> import numpy as np
->>> obs_data = np.loadtxt('test/optical_obs.dat',dtype=str,skiprows=1) # Load the observation file
+>>> obs_data = np.loadtxt('test/test1/optical_obs.dat',dtype=str,skiprows=1) # Load the observation file
 >>> # extract the necessary data
 >>> t = obs_data[:,0] # Obsevation time in UTC
 >>> xyz_site = obs_data[:,1:4].astype(float) # Cartesian coordinates of the site in GCRF, [km]
@@ -486,7 +486,7 @@ Load the observation file and extract the space-based radar measurement data.
 ```python
 >>> import numpy as np
 >>> 
->>> obs_data = np.loadtxt('test/radar_obs.dat',dtype=str,skiprows=1) # Load the observation file
+>>> obs_data = np.loadtxt('test/test1/radar_obs.dat',dtype=str,skiprows=1) # Load the observation file
 >>> # extract the necessary data
 >>> t = obs_data[:,0] # Obsevation time in UTC
 >>> orbele_site = obs_data[:,1:7].astype(float) # Orbital elements(a,ecc,inc,raan,argp,true_anomaly) of the site
@@ -522,7 +522,7 @@ Extract the necessary information for IOD from **ground-based optical angle-only
 
 ```python
 >>> import numpy as np
->>> obs_data = np.loadtxt('test5/T25872_KUN2_2.dat',dtype=str,skiprows=1) # Load the observation file
+>>> obs_data = np.loadtxt('test/test5/T25872_KUN2_2.dat',dtype=str,skiprows=1) # Load the observation file
 >>> obs_data = obs_data[::10]
 >>> # Extract the necessary data
 >>> t = obs_data[:,0] # Obsevation time in UTC
@@ -658,7 +658,7 @@ Compare the results with the true orbits from TLE.
 
 ```python
 >>> from orbdtools import TLE
->>> tle_file = 'test5/tle_20220119.txt'
+>>> tle_file = 'test/test5/tle_20220119.txt'
 >>> tle = TLE.from_file(tle_file)
 >>> tle_update = tle.atEpoch('2022-01-18T21:31:36.000')
 >>> tle_df = tle_update.df
@@ -674,7 +674,7 @@ For the **space-based optical angle-only** measurements, we use the same process
 
 ```python
 >>> import numpy as np
->>> obs_data = np.loadtxt('test3/T22694_S1_1_C5_1.dat',dtype=str,skiprows=1) # Load the observation file
+>>> obs_data = np.loadtxt('test/test3/T22694_S1_1_C5_1.dat',dtype=str,skiprows=1) # Load the observation file
 >>> obs_data = obs_data[::5]
 >>> # extract the necessary data
 >>> t = obs_data[:,0] # Obsevation time in UTC
@@ -700,30 +700,30 @@ For the **space-based optical angle-only** measurements, we use the same process
 >>> print(arc_iod.df.to_string())
 >>> arc_iod.fg_series(ellipse_only=False)
 >>> print(arc_iod.df.to_string())
->>>                      epoch         a           ecc        inc        raan        argp          nu           M            h   status
->>> 0  2022-03-24T19:43:11.000  6.620564      0.000002  15.122863    6.748521  184.996759    1.038925     1.03892     2.573046  success
->>>                      epoch         a           ecc        inc        raan        argp          nu           M            h   status
->>> 0  2022-03-24T19:43:11.000 -0.002950  77687.676046  45.163396  286.360923  179.950664    8.310002  333.175406  4219.232928   failed
->>> 1  2022-03-24T19:43:11.000  6.859966      0.025903  18.530465    3.513682  170.273591   15.725365   14.935701     2.618275  success
->>> 2  2022-03-24T19:43:11.000  6.616976      0.007160   2.819296  204.772918  181.406380  184.848294  184.918012     2.572282   failed
->>>                      epoch         a           ecc        inc        raan        argp          nu           M            h   status
->>> 0  2022-03-24T19:43:11.000 -0.002950  77704.757170  45.163444  286.360610  179.949294    8.311361  223.906534  4220.111239   failed
->>> 1  2022-03-24T19:43:11.000  6.859363      0.025809  18.531228    3.511614  170.260444   15.738826   14.951304     2.618166  success
->>> 2  2022-03-24T19:43:11.000  6.616654      0.007214   2.820695  204.774097  181.496819  184.758445  184.827393     2.572219   failed
->>>                      epoch         a           ecc        inc        raan        argp          nu           M            h   status
->>> 0  2022-03-24T19:43:11.000 -0.029135   2520.867018  44.311504  279.565977    0.649530    7.579402  123.613228   430.287289   failed
->>> 1  2022-03-24T19:43:11.000  6.548644      0.008583   0.345056   21.958307    1.134312  184.607814  184.687336     2.558938  success
->>> 2  2022-03-24T19:43:11.000  6.422555      0.022935  10.780522   11.045074  356.693901  189.357780  189.792484     2.533609  success
->>>                      epoch         a           ecc        inc        raan        argp          nu           M            h   status
->>> 0  2022-03-24T19:43:11.000  6.455367      0.025672  15.406771    6.858407   10.275297  175.652244  175.424872     2.539904  success
->>>                      epoch         a           ecc        inc        raan        argp          nu           M            h   status
->>> 0  2022-03-24T19:43:11.000  6.620564      0.000002  15.122845    6.749191  186.035035    0.000815    0.000815     2.573046  success
->>>                      epoch         a           ecc        inc        raan        argp          nu           M            h   status
->>> 0  2022-03-24T19:43:11.000  6.620564      0.000002  15.122845    6.749191  186.035035    0.000815    0.000815     2.573046  success
->>>                      epoch         a           ecc        inc        raan        argp          nu           M            h   status
->>> 0  2022-03-24T19:43:11.000  6.559381      0.005895   0.807161   21.111149  359.195522  186.897296  186.978778     2.561084  success
+>>> #                      epoch         a           ecc        inc        raan        argp          nu           M            h   status
+>>> # 0  2022-03-24T19:43:11.000  6.620564      0.000002  15.122863    6.748521  184.996759    1.038925     1.03892     2.573046  success
+>>> #                      epoch         a           ecc        inc        raan        argp          nu           M            h   status
+>>> # 0  2022-03-24T19:43:11.000 -0.002950  77687.676046  45.163396  286.360923  179.950664    8.310002  333.175406  4219.232928   failed
+>>> # 1  2022-03-24T19:43:11.000  6.859966      0.025903  18.530465    3.513682  170.273591   15.725365   14.935701     2.618275  success
+>>> # 2  2022-03-24T19:43:11.000  6.616976      0.007160   2.819296  204.772918  181.406380  184.848294  184.918012     2.572282   failed
+>>> #                      epoch         a           ecc        inc        raan        argp          nu           M            h   status
+>>> # 0  2022-03-24T19:43:11.000 -0.002950  77704.757170  45.163444  286.360610  179.949294    8.311361  223.906534  4220.111239   failed
+>>> # 1  2022-03-24T19:43:11.000  6.859363      0.025809  18.531228    3.511614  170.260444   15.738826   14.951304     2.618166  success
+>>> # 2  2022-03-24T19:43:11.000  6.616654      0.007214   2.820695  204.774097  181.496819  184.758445  184.827393     2.572219   failed
+>>> #                      epoch         a           ecc        inc        raan        argp          nu           M            h   status
+>>> # 0  2022-03-24T19:43:11.000 -0.029135   2520.867018  44.311504  279.565977    0.649530    7.579402  123.613228   430.287289   failed
+>>> # 1  2022-03-24T19:43:11.000  6.548644      0.008583   0.345056   21.958307    1.134312  184.607814  184.687336     2.558938  success
+>>> # 2  2022-03-24T19:43:11.000  6.422555      0.022935  10.780522   11.045074  356.693901  189.357780  189.792484     2.533609  success
+>>> #                      epoch         a           ecc        inc        raan        argp          nu           M            h   status
+>>> # 0  2022-03-24T19:43:11.000  6.455367      0.025672  15.406771    6.858407   10.275297  175.652244  175.424872     2.539904  success
+>>> #                      epoch         a           ecc        inc        raan        argp          nu           M            h   status
+>>> # 0  2022-03-24T19:43:11.000  6.620564      0.000002  15.122845    6.749191  186.035035    0.000815    0.000815     2.573046  success
+>>> #                      epoch         a           ecc        inc        raan        argp          nu           M            h   status
+>>> # 0  2022-03-24T19:43:11.000  6.620564      0.000002  15.122845    6.749191  186.035035    0.000815    0.000815     2.573046  success
+>>> #                      epoch         a           ecc        inc        raan        argp          nu           M            h   status
+>>> # 0  2022-03-24T19:43:11.000  6.676907      0.008458  15.048129    6.719165  189.801615  356.263119  356.325893     2.583879  success
 >>> from orbdtools import TLE
->>> tle_file = 'test3/tle_20220325.txt'
+>>> tle_file = 'test/test3/tle_20220325.txt'
 >>> tle = TLE.from_file(tle_file)
 >>> tle_update = tle.atEpoch('2022-03-24T19:43:11.000')
 >>> tle_df = tle_update.df
@@ -739,7 +739,7 @@ Extract the necessary information for Initial Orbit Determination(IOD) from **sp
 
 ```python
 >>> import numpy as np
->>> obs_data = np.loadtxt('test/radar_obs.dat',dtype=str,skiprows=1) # Load the observation file
+>>> obs_data = np.loadtxt('test/test1/radar_obs.dat',dtype=str,skiprows=1) # Load the observation file
 >>> # extract the necessary data
 >>> t = obs_data[:,0] # Obsevation time in UTC
 >>> orbele_site = obs_data[:,1:7].astype(float) # Orbital elements(a,ecc,inc,raan,argp,true_anomaly) of the site
@@ -801,7 +801,7 @@ Compare the results with the true orbits from TLE.
 
 ```python
 >>> from orbdtools import TLE
->>> tle_file = 'test/tle_20220524.txt'
+>>> tle_file = 'test/test1/tle_20220524.txt'
 >>> tle = TLE.from_file(tle_file)
 >>> tle_update = tle.atEpoch('2022-05-24T08:38:34.000')
 >>> tle_df = tle_update.df
@@ -821,7 +821,7 @@ Read, load, and preprocess the **first** segment of observation data.
 
 ```python
 >>> import numpy as np
->>> obs_data = np.loadtxt('test6/T38044_S1_1_C1_1.dat',dtype=str,skiprows=1) # Load the observation file
+>>> obs_data = np.loadtxt('test/test6/T38044_S1_1_C1_1.dat',dtype=str,skiprows=1) # Load the observation file
 >>> # extract the necessary data
 >>> t = obs_data[:,0] # Obsevation time in UTC
 >>> xyz_site = obs_data[:,1:4].astype(float) # Cartesian coordinates of the site in GCRF, [km]
@@ -838,7 +838,7 @@ Read, load, and preprocess the **second** segment of observation data.
 
 ```python
 >>> import numpy as np
->>> obs_data = np.loadtxt('test6/T38044_S1_2_C1_2.dat',dtype=str,skiprows=1) # Load the observation file
+>>> obs_data = np.loadtxt('test/test6/T38044_S1_2_C1_2.dat',dtype=str,skiprows=1) # Load the observation file
 >>> # extract the necessary data
 >>> t = obs_data[:,0] # Obsevation time in UTC
 >>> xyz_site = obs_data[:,1:4].astype(float) # Cartesian coordinates of the site in GCRF, [km]
@@ -863,7 +863,7 @@ Read the TLE file and build the TLE database.
 
 ```python
 >>> from orbdtools import TLE
->>> tle_file = 'test6/tle_20220722.txt'
+>>> tle_file = 'test/test6/tle_20220722.txt'
 >>> tle = TLE.from_file(tle_file)
 >>> print(tle)
 >>> # <TLE object: Counts = 5085 Statistic = 
@@ -945,6 +945,10 @@ Next, make a cataloging OD and generate a new TLE.
 ```
 
 ## Change log
+
+- **0.2.1 — Dec 04, 2023**
+  - Improved the FG-Series method for angle-only measurements by using the IOD results from the Near-Circular Orbit Hypothesis method as the initial value.
+  - Fixed the bug that caused module import failure due to duplicate names of sgp4_od.py and sgp4_od directories by deleting redundant sgp4_od.py files.
 
 - **0.2.0 — Oct 18, 2023**
   

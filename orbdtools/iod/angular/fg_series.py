@@ -65,7 +65,7 @@ def fun_resi(rv_vec,mu,xyz_sitenp,losnp,tau):
 
     return residuals      
 
-def fg_series_optical(mu,t_,xyz_sitenp,losnp,degrees=True):
+def fg_series_optical(mu,t_,xyz_sitenp,losnp,degrees=True,rv0=None):
     """
     Estimate the classical orbital elements at Intermediate epoch from optical angle-only measurements using FG-Series method.
 
@@ -91,11 +91,11 @@ def fg_series_optical(mu,t_,xyz_sitenp,losnp,degrees=True):
         Bate R R, Mueller D D, White J E, et al. Fundamentals of astrodynamics(2nd)[M]. Courier Dover Publications, 2020.     
     """
 
-    f0,g0 = np.ones_like(t_),t_ # Initial Lagrangian Coefficient f and g
-    A,B = D_M(f0,g0,xyz_sitenp,losnp)
-
-    num_eqs = len(t_)*3
-    rv0,_resi,_rnk,_s = lstsq(A.reshape(num_eqs,6),B.reshape(num_eqs))
+    if rv0 is None:
+        f0,g0 = np.ones_like(t_),t_ # Initial Lagrangian Coefficient f and g
+        A,B = D_M(f0,g0,xyz_sitenp,losnp)
+        num_eqs = len(t_)*3
+        rv0,_resi,_rnk,_s = lstsq(A.reshape(num_eqs,6),B.reshape(num_eqs))
     res = least_squares(fun_resi,rv0, args=(mu,xyz_sitenp,losnp,t_),method='lm')
     ele = rv2coe(res.x,mu,degrees)
 

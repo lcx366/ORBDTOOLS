@@ -10,6 +10,8 @@ from ..iod.angular.fg_series import fg_series_optical
 from ..iod.radar.fg_series import fg_series_radar
 from ..iod.common import to_ele_dict_radar,to_ele_dict_optical
 
+from ..transform.kep_rv_trans import coe2rv
+
 #from ..iod.angular.ref_vec import ref_vec_estimate
 #from ..iod.angular.karimi import karimi_estimate
 
@@ -87,7 +89,6 @@ class IOD(object):
         """
         Initialize an instance of class IOD.
         """
-        self.info = info
         for key in info.keys():
             setattr(self, key, info[key])
 
@@ -167,9 +168,10 @@ class IOD(object):
             valid_flag = (perigee > self.Re_nd) & (ele_df['status'] == 'success')
             ele_df = ele_df[valid_flag]
 
-        self.info['df'] = self.df = ele_df
-        self.info['rms'] = self.rms = rms
-        self.info['method'] = self.method = 'Gibbs/Herrick-Gibbs' 
+        self.coe = ele
+        self.df = ele_df
+        self.rms = rms
+        self.method = 'Gibbs/Herrick-Gibbs' 
           
         return self
 
@@ -235,9 +237,10 @@ class IOD(object):
             valid_flag = (perigee > self.Re_nd) & (ele_df['status'] == 'success')
             ele_df = ele_df[valid_flag]
 
-        self.info['df'] = self.df = ele_df  
-        self.info['rms'] = self.rms = rms  
-        self.info['method'] = self.method = 'Elliptical Orbit Fitting'  
+        self.coe = ele
+        self.df = ele_df  
+        self.rms = rms  
+        self.method = 'Elliptical Orbit Fitting'  
 
         return self
 
@@ -310,9 +313,10 @@ class IOD(object):
             valid_flag = (perigee > self.Re_nd) & (ele_df['status'] == 'success')
             ele_df = ele_df[valid_flag]
 
-        self.info['df'] = self.df = ele_df   
-        self.info['rms'] = self.rms = rms   
-        self.info['method'] = self.method = 'Near-Circular Orbit Hypothesis' 
+        self.coe = ele
+        self.df = ele_df   
+        self.rms = rms   
+        self.method = 'Near-Circular Orbit Hypothesis' 
 
         return self      
 
@@ -385,9 +389,10 @@ class IOD(object):
             valid_flag = (perigee > self.Re_nd) & (ele_df['status'] == 'success')
             ele_df = ele_df[valid_flag]
 
-        self.info['df'] = self.df = ele_df
-        self.info['rms'] = self.rms = rms
-        self.info['method'] = self.method = 'Gauss'
+        self.coe = eles
+        self.df = ele_df
+        self.rms = rms
+        self.method = 'Gauss'
 
         return self   
 
@@ -461,9 +466,10 @@ class IOD(object):
             valid_flag = (perigee > self.Re_nd) & (ele_df['status'] == 'success')
             ele_df = ele_df[valid_flag]
 
-        self.info['df'] = self.df = ele_df
-        self.info['rms'] = self.rms = rms
-        self.info['method'] = self.method = 'Laplace'
+        self.coe = eles
+        self.df = ele_df
+        self.rms = rms
+        self.method = 'Laplace'
 
         return self  
 
@@ -531,9 +537,10 @@ class IOD(object):
             valid_flag = (perigee > self.Re_nd) & (ele_df['status'] == 'success')
             ele_df = ele_df[valid_flag]
 
-        self.info['df'] = self.df = ele_df
-        self.info['rms'] = self.rms = rms
-        self.info['method'] = self.method = 'Multiple-points Laplace'
+        self.coe = eles
+        self.df = ele_df
+        self.rms = rms
+        self.method = 'Multiple-points Laplace'
             
         return self 
 
@@ -606,9 +613,10 @@ class IOD(object):
             valid_flag = (perigee > self.Re_nd) & (ele_df['status'] == 'success')
             ele_df = ele_df[valid_flag]
 
-        self.info['df'] = self.df = ele_df
-        self.info['rms'] = self.rms = rms
-        self.info['method'] = self.method = 'Double-R'
+        self.coe = ele
+        self.df = ele_df
+        self.rms = rms
+        self.method = 'Double-R'
 
         return self         
 
@@ -686,13 +694,14 @@ class IOD(object):
             valid_flag = (perigee > self.Re_nd) & (ele_df['status'] == 'success')
             ele_df = ele_df[valid_flag]
 
-        self.info['df'] = self.df = ele_df
-        self.info['rms'] = self.rms = rms
-        self.info['method'] = self.method = 'Gooding'
+        self.coe = ele
+        self.df = ele_df
+        self.rms = rms
+        self.method = 'Gooding'
 
         return self 
 
-    def fg_series(self,degrees=True,ellipse_only=True,rms_tol=2e-4):
+    def fg_series(self,degrees=True,ellipse_only=True,rms_tol=2e-4,improved=True):
         """
         Estimate the classical orbital elements at Intermediate epoch from optical angle-only measurements or radar range+angle measurements using FG-Series method.
 
@@ -736,33 +745,46 @@ class IOD(object):
         references: 
             李光宇.天体测量和天体力学基础[M].科学出版社,2015.   
             刘林.卫星轨道力学算法[M].南京大学出版社,2019.
-            Bate R R, Mueller D D, White J E, et al. Fundamentals of astrodynamics(2nd)[M]. Courier Dover Publications, 2020.             
+            Bate R R, Mueller D D, White J E, et al. Fundamentals of astrodynamics(2nd)[M]. Courier Dover Publications, 2020.     
+        Note:
+            For radar measurement type point data (3D Cartesian coordinates of space targets), 
+            using the IOD results of the Gibbs/Herrick-Gibbs method as the initial value of the FG-Series method 
+            cannot effectively improve the results of directly using the FG-Series method.
         """
-        t0_2 = self.t0_2
-        t_2_nd = self.t_2_nd
+        t0_1 = self.t0_1
+        t_1_nd = self.t_1_nd
         mu_nd = self.mu_nd
 
         if self.mode == 'radar':
             posnp_nd = self.posnp_nd
-            ele = fg_series_radar(mu_nd,t_2_nd,posnp_nd,degrees)
+            ele = fg_series_radar(mu_nd,t_1_nd,posnp_nd,degrees)
             # check the orbital elements by rms
-            ele_df,rms = to_ele_dict_radar(mu_nd,t0_2,t_2_nd,ele,posnp_nd,degrees,rms_tol)
+            ele_df,rms = to_ele_dict_radar(mu_nd,t0_1,t_1_nd,ele,posnp_nd,degrees,rms_tol)
             
         elif self.mode == 'optical':    
             losnp = self.losnp
             xyz_sitenp_nd = self.xyz_sitenp_nd
-            ele = fg_series_optical(mu_nd,t_2_nd,xyz_sitenp_nd,losnp,degrees)
+
+            if improved:
+                self.circular(degrees,ellipse_only,rms_tol)
+                coe = self.coe
+                rv0 = coe2rv(coe,mu_nd,degrees)
+            else:
+                rv0 = None    
+
+            ele = fg_series_optical(mu_nd,t_1_nd,xyz_sitenp_nd,losnp,degrees,rv0)
             # check the orbital elements by rms
-            ele_df,rms = to_ele_dict_optical(mu_nd,t0_2,t_2_nd,[ele],losnp,xyz_sitenp_nd,degrees,rms_tol)
+            ele_df,rms = to_ele_dict_optical(mu_nd,t0_1,t_1_nd,[ele],losnp,xyz_sitenp_nd,degrees,rms_tol)
 
         if ellipse_only:
             perigee = ele_df['a']*(1-ele_df['ecc'])
             valid_flag = (perigee > self.Re_nd) & (ele_df['status'] == 'success')
             ele_df = ele_df[valid_flag]
 
-        self.info['df'] = self.df = ele_df
-        self.info['rms'] = self.rms = rms
-        self.info['method'] = self.method = 'FG-Series'
+        self.coe = ele
+        self.df = ele_df
+        self.rms = rms
+        self.method = 'FG-Series'
 
         return self  
 

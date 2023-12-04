@@ -60,7 +60,7 @@ def fun_resi(rv_vec,mu,posnp,tau):
 
     return residuals      
 
-def fg_series_radar(mu,t_,posnp,degrees=True):
+def fg_series_radar(mu,t_,posnp,degrees=True,rv0=None):
     """
     Estimate the classical orbital elements at Intermediate epoch from radar range+angle measurements using FG-Series method.
 
@@ -85,11 +85,13 @@ def fg_series_radar(mu,t_,posnp,degrees=True):
         Bate R R, Mueller D D, White J E, et al. Fundamentals of astrodynamics(2nd)[M]. Courier Dover Publications, 2020.     
     """
 
-    f0,g0 = np.ones_like(t_),t_ # Initial Lagrangian Coefficient f and g
-    A,B = D_M(f0,g0,posnp)
+    if rv0 is None:
+        f0,g0 = np.ones_like(t_),t_ # Initial Lagrangian Coefficient f and g
+        A,B = D_M(f0,g0,posnp)
 
-    num_eqs = len(t_)*3
-    rv0,_resi,_rnk,_s = lstsq(A.reshape(num_eqs,6),B.reshape(num_eqs))
+        num_eqs = len(t_)*3
+        rv0,_resi,_rnk,_s = lstsq(A.reshape(num_eqs,6),B.reshape(num_eqs))
+        
     res = least_squares(fun_resi,rv0, args=(mu,posnp,t_),method='lm')
     ele = rv2coe(res.x,mu,degrees)
 
