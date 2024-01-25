@@ -346,7 +346,7 @@ class ArcObs(object):
         ta = self._ta_lowess
         xyz_site = self._xyz_site_lowess
         xyz_site_nd = xyz_site / nd_unit._L # Convert to non-dimensional length unit [L_nd]
-        losnp = self.losnp
+        losnp = self._losnp_lowess
 
         # For case of optical angle-only measurements
         if self.mode == 'optical':
@@ -362,8 +362,8 @@ class ArcObs(object):
             dict_keys = ['t3p','xyz_site3p_nd','los3p','xyz_site_nd','losnp','_alpha_vec','_delta_vec']
             dict_values = [t3p,xyz_site3p_nd,los3p,xyz_site_nd,losnp,alpha_vec,delta_vec]
             """
-            dict_keys = ['t3p','xyz_site3p_nd','los3p','xyz_sitenp_nd']
-            dict_values = [t3p,xyz_site3p_nd,los3p,xyz_site_nd]
+            dict_keys = ['t3p','xyz_site3p_nd','los3p','losnp','xyz_sitenp_nd']
+            dict_values = [t3p,xyz_site3p_nd,los3p,losnp,xyz_site_nd]
 
         # For case of radar range+angle measurements
         elif self.mode == 'radar':

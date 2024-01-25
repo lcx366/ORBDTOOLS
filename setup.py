@@ -2,7 +2,7 @@ from setuptools import setup,find_packages
 
 setup(
     name='orbdtools',
-    version='0.2.1',
+    version='0.2.2',
     description='A set of routines for data processing related to ORBit Determination(ORBD) of space objects',
     author='Chunxiao Li',
     author_email='lcx366@126.com',

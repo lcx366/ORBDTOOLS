@@ -46,8 +46,13 @@ class TLE(object):
 
         df = info['df']
         df_statistic = df[['a','ecc','inc','raan','argp','h','bstar','mjd']].describe().loc['mean':]
-        mjd_statistic = df_statistic['mjd'].loc[['mean','min','25%','50%','75%','max']]
-        df_statistic['mjd'].loc[['mean','min','25%','50%','75%','max']] = Time(mjd_statistic, format='mjd').isot
+
+        df_statistic['mjd'] = df_statistic['mjd'].astype(str)
+
+        for index in ['mean', 'min', '25%', '50%', '75%', 'max']:
+            mjd_value = df_statistic.loc[index, 'mjd']
+            df_statistic.loc[index, 'mjd'] = Time(mjd_value, format='mjd').isot
+
         mjd_statistic = df_statistic['mjd']
         range_epoch = mjd_statistic.loc[['min','max']].to_list()
         df_statistic.rename(columns={"mjd": "epoch"},inplace=True)
@@ -55,6 +60,7 @@ class TLE(object):
         for key in info.keys():
             setattr(self, key, info[key])
 
+        self._info = info 
         self.range_epoch = range_epoch
         self._statistic = df_statistic
         self._sats_Satrec = sats_Satrec
@@ -172,7 +178,7 @@ class TLE(object):
         sats_Satrec = np.array(self._sats_Satrec)[in_flag]
         sats_EarthSatellite = np.array(self._sats_EarthSatellite)[in_flag]   
         
-        info = deepcopy(self.__dict__)
+        info = deepcopy(self._info)
 
         for key in info.keys():
             info[key] = info[key][in_flag]
@@ -203,7 +209,7 @@ class TLE(object):
         sats_Satrec = np.array(self._sats_Satrec)[in_flag]
         sats_EarthSatellite = np.array(self._sats_EarthSatellite)[in_flag]   
         
-        info = deepcopy(self.__dict__)
+        info = deepcopy(self._info)
 
         for key in info.keys():
             info[key] = info[key][in_flag]

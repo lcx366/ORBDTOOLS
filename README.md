@@ -946,6 +946,9 @@ Next, make a cataloging OD and generate a new TLE.
 
 ## Change log
 
+- **0.2.2 — Jan 25, 2024**
+  - Added the conversion between state vector(position and velocity) and modified equinoctial elements.
+
 - **0.2.1 — Dec 04, 2023**
   - Improved the FG-Series method for angle-only measurements by using the IOD results from the Near-Circular Orbit Hypothesis method as the initial value.
   - Fixed the bug that caused module import failure due to duplicate names of sgp4_od.py and sgp4_od directories by deleting redundant sgp4_od.py files.

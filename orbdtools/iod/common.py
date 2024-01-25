@@ -130,7 +130,7 @@ def get_a0(mu,los_vec,R_vec,tof):
         r_min = norm(R_vec,axis=1).max()  
 
     args = (mu,los_vec,R_vec,tof)
-    res = minimize_scalar(func_circular, bounds=(r_min,r_min*1.5), args = args,method='bounded')
+    res = minimize_scalar(func_circular, bounds=(r_min,r_min*10), args = args,method='bounded')
 
     if not res.success: raise Exception(res.message)           
 

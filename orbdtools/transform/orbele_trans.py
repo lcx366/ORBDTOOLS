@@ -376,12 +376,8 @@ def coe2nse(a,ecc,inc,raan,argp,nu,degrees=True):
         raan -> [array-like,float] Longitude of ascending node, [radians] or [deg]
         xi -> [array-like,float] non-singular parameter, ξ = e * cosω
         eta -> [array-like,float] non-singular parameter,η = e * cosω
-        l -> [array-like,float] non-singular parameter, [radians] or [deg] , l = ω + M 
-    """
-    if ecc < 1:
-        M = nu_to_Me(nu,ecc,degrees)
-    else:
-        raise Exception('Convertion to non-singular orbital elements only applies to elliptic trajectories.')    
+        l -> [array-like,float] non-singular parameter, [radians] or [deg] , l = ω + ν
+    """  
 
     if degrees: 
         argp_rad = np.deg2rad(argp)
@@ -390,7 +386,7 @@ def coe2nse(a,ecc,inc,raan,argp,nu,degrees=True):
     else:
         xi = ecc * np.cos(argp)
         eta = ecc * np.sin(argp)
-    l = argp + M
+    l = argp + nu
 
     nse = (a, inc, raan, xi, eta, l)
 
@@ -409,7 +405,7 @@ def nse2coe(a,inc,raan,xi,eta,l,degrees=True):
         raan -> [array-like,float] Longitude of ascending node, [radians] or [deg]
         xi -> [array-like,float] non-singular parameter, ξ = e * cosω
         eta -> [array-like,float] non-singular parameter, η = e * cosω
-        l -> [array-like,float] non-singular parameter, [radians] or [deg], l = ω + M   
+        l -> [array-like,float] non-singular parameter, [radians] or [deg], l = ω + ν   
         degrees -> [bool,optional,default=True] unit for angular variables 
     Outputs:
         a -> [array-like,float] Semi-major axis
@@ -421,17 +417,13 @@ def nse2coe(a,inc,raan,xi,eta,l,degrees=True):
     """
     ecc = np.sqrt(xi ** 2 + eta ** 2)
 
-    if not ecc < 1:
-        raise Exception('Convertion from non-singular orbital elements only applies to elliptic trajectories.')   
-
     argp = np.arctan2(eta, xi)
     if degrees:
         argp = np.rad2deg(argp) % 360
-        M = (l - argp)%360
+        nu = (l - argp)%360
     else:
-        M = (l - argp) % Const.twopi
+        nu = (l - argp) % Const.twopi
 
-    nu = Me_to_nu(M,ecc,degrees) 
     coe = (a, ecc, inc,raan,argp, nu)   
         
     return coe
@@ -454,26 +446,18 @@ def coe2mee(a,ecc,inc,raan,argp,nu,degrees=True):
         degrees -> [bool,optional,default=True] unit for angular variables 
     Outputs:
         p -> [array-like,float] Semi-latus rectum, p = a*(1-e**2)
-        f -> [array-like,float] Equinoctial parameter f, f = e * cos(Ω + ω)
-        g -> [array-like,float] Equinoctial parameter g, g = e * sin(Ω + ω)
-        h -> [array-like,float] Equinoctial parameter h, h = tan(i/2) * cos(Ω)
-        k -> [array-like,float] Equinoctial parameter k, k = tan(i/2) * sin(Ω)
-        L -> [array-like,float] Longitude, [radians] or [deg], L = Ω + ω + M
+        f -> [array-like,float] x components of the eccentricity vector in the orbital frame, f = e * cos(Ω + ω)
+        g -> [array-like,float] y components of the eccentricity vector in the orbital frame, g = e * sin(Ω + ω)
+        h -> [array-like,float] x components of the node vector in the orbital frame, h = tan(i/2) * cos(Ω)
+        k -> [array-like,float] y components of the node vector in the orbital frame, k = tan(i/2) * sin(Ω)
+        L -> [array-like,float] True Longitude, [radians] or [deg], L = Ω + ω + ν
     """
     lonper = raan + argp
     p = a*(1-ecc**2)
-
-    if ecc < 1:
-        M = nu_to_Me(nu,ecc,degrees)
-    else:
-        raise Exception('Convertion to non-singular orbital elements only applies to elliptic trajectories.')  
-
-    L = lonper + M
+    L = lonper + nu
 
     if degrees:
-        lonper = np.deg2rad(lonper)
-        raan = np.deg2rad(raan)
-        inc = np.deg2rad(inc)
+        lonper,raan,inc = np.deg2rad(lonper,raan,inc)
     
     f = ecc * np.cos(lonper)
     g = ecc * np.sin(lonper)
@@ -496,7 +480,7 @@ def mee2coe(p,f,g,h,k,L,degrees=True):
         g -> [array-like,float] Equinoctial parameter g, g = e * sin(Ω + ω)
         h -> [array-like,float] Equinoctial parameter h, h = tan(i/2) * cos(Ω)
         k -> [array-like,float] Equinoctial parameter k, k = tan(i/2) * sin(Ω)
-        L -> [array-like,float] Longitude, [radians] or [deg], L = Ω + ω + M
+        L -> [array-like,float] True Longitude, [radians] or [deg], L = Ω + ω + ν
         degrees -> [bool,optional,default=True] unit for angular variables 
     Outputs:
         a -> [array-like,float] Semi-major axis
@@ -509,24 +493,16 @@ def mee2coe(p,f,g,h,k,L,degrees=True):
     a = p/(1-f**2-g**2)
     ecc = np.sqrt(f ** 2 + g ** 2)
 
-    if not ecc < 1:
-        raise Exception('Convertion from non-singular orbital elements only applies to elliptic trajectories.') 
-
     inc = 2 * np.arctan(np.sqrt(h ** 2 + k ** 2))
     lonper = np.arctan2(g, f)
     raan = np.arctan2(k, h) % Const.twopi
     argp = (lonper - raan) % Const.twopi
 
     if degrees: 
-        lonper = np.rad2deg(lonper)
-        inc = np.rad2deg(inc)
-        raan = np.rad2deg(raan)
-        argp = np.rad2deg(argp)
-        M = (L - lonper) % 360
+        lonper,inc,raan,argp = np.rad2deg([lonper,inc,raan,argp])
+        nu = (L - lonper) % 360
     else:
-        M = (L - lonper) % Const.twopi
-            
-    nu = Me_to_nu(M,ecc,degrees)
+        nu = (L - lonper) % Const.twopi
 
     coe = (a, ecc, inc, raan, argp, nu)
 
@@ -615,7 +591,7 @@ def osculating2mean(oscu_ele,epoch,oscuref='TEME',meanref='TEME',degrees=True):
 
     Usage:
         >>> from astropy.time import Time
-        >>> oscu_ele = [7000,0.01,50,100,30,210] # in form of [a, e, i, Ω, ω, v]
+        >>> oscu_ele = [7000,0.01,50,100,30,210] # in form of [a, e, i, Ω, ω, M]
         >>> epoch = Time('2022-06-07T08:09:12.345')
         >>> mean_ele = osculating2mean(oscu_ele,epoch)
     Inputs:

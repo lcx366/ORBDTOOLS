@@ -269,7 +269,7 @@ class OrbeleTrans(object):
             raan -> [array-like,float] Longitude of ascending node, [radians] or [deg]
             xi -> [array-like,float] non-singular parameter, ξ = e * cosω
             eta -> [array-like,float] non-singular parameter, η = e * cosω
-            l -> [array-like,float] non-singular parameter, [radians] or [deg], l = ω + M  
+            l -> [array-like,float] non-singular parameter, [radians] or [deg], l = ω + ν  
         """   
         nse = orbele_trans.coe2nse(a,ecc,inc,raan,argp,nu,degrees) 
         return nse
@@ -288,7 +288,7 @@ class OrbeleTrans(object):
             raan -> [array-like,float] Longitude of ascending node, [radians] or [deg]
             xi -> [array-like,float] non-singular parameter, ξ = e * cosω
             eta -> [array-like,float] non-singular parameter, η = e * cosω
-            l -> [array-like,float] non-singular parameter, [radians] or [deg], l = ω + M 
+            l -> [array-like,float] non-singular parameter, [radians] or [deg], l = ω + ν
             degrees -> [bool,optional,default=True] unit for angular variables 
         Outputs:
             a -> [array-like,float] Semi-major axis
@@ -324,7 +324,7 @@ class OrbeleTrans(object):
             g -> [array-like,float] Equinoctial parameter g, g = e * sin(Ω + ω)
             h -> [array-like,float] Equinoctial parameter h, h = tan(i/2) * cos(Ω)
             k -> [array-like,float] Equinoctial parameter k, k = tan(i/2) * sin(Ω)
-            L -> [array-like,float] Longitude, [radians] or [deg], L = Ω + ω + M
+            L -> [array-like,float] True Longitude, [radians] or [deg], L = Ω + ω + ν
         """   
         mee = orbele_trans.coe2mee(a,ecc,inc,raan,argp,nu,degrees)  
         return mee
@@ -342,7 +342,7 @@ class OrbeleTrans(object):
             g -> [array-like,float] Equinoctial parameter g, g = e * sin(Ω + ω)
             h -> [array-like,float] Equinoctial parameter h, h = tan(i/2) * cos(Ω)
             k -> [array-like,float] Equinoctial parameter k, k = tan(i/2) * sin(Ω)
-            L -> [array-like,float] Longitude, [radians] or [deg], L = Ω + ω + M
+            L -> [array-like,float] Longitude, [radians] or [deg], L = Ω + ω + ν
             degrees -> [bool,optional,default=True] unit for angular variables 
         Outputs:
             a -> [array-like,float] Semi-major axis
@@ -362,7 +362,7 @@ class OrbeleTrans(object):
         Usage:
             >>> from orbdtools import OrbeleTrans
             >>> from astropy.time import Time
-            >>> mean_ele = [7000,0.01,50,100,30,210] # in form of [a, e, i, Ω, ω, v]
+            >>> mean_ele = [7000,0.01,50,100,30,210] # in form of [a, e, i, Ω, ω, M]
             >>> epoch = Time('2022-06-07T08:09:12.345')
             >>> oscu_ele = OrbeleTrans.mean2osculating(mean_ele,epoch)
         Inputs:
