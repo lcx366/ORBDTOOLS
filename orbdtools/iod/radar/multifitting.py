@@ -1,7 +1,12 @@
 import numpy as np
 from numpy.linalg import norm,svd
-from scipy.integrate import simps
 from scipy.optimize import lsq_linear
+
+try:
+    from scipy.integrate import simpson
+except ImportError:
+    # Fallback to pre scipy v1.10.0
+    from scipy.integrate import simps as simpson
 
 from ...utils import Const
 
@@ -69,7 +74,7 @@ def ellipse_fitting(mu,tof,t_,r_vec,degrees=True):
         else:
             thetas[:ind[0]+1] -= twopi
 
-    h_mag = simps(rs**2,thetas)/tof
+    h_mag = simpson(rs**2,thetas)/tof
 
     p = h_mag**2/mu
 
