@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.linalg import norm,svd
-from scipy.integrate import simps
+from scipy.integrate import simpson
 from scipy.optimize import lsq_linear
 
 from ...utils import Const
